@@ -1,5 +1,51 @@
 #!/usr/bin/env sh
 set -eu
 
+if [ -t 1 ]; then
+  blue='\033[94m'
+  magenta='\033[95m'
+  cyan='\033[96m'
+  muted='\033[90m'
+  reset='\033[0m'
+else
+  blue=''
+  magenta=''
+  cyan=''
+  muted=''
+  reset=''
+fi
+
+printf '%b\n' \
+  "${blue}██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗${reset}" \
+  "${blue}██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝${reset}" \
+  "${magenta}██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ${reset}" \
+  "${magenta}██║   ██║██╔═══╝ ██║  ██║██╔══██║   ██║   ██╔══╝  ${reset}" \
+  "${cyan}╚██████╔╝██║     ██████╔╝██║  ██║   ██║   ███████╗${reset}" \
+  "${cyan} ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝${reset}" \
+  '' \
+  "${muted}Your packages called — they'd like to see the future.${reset}"
+
+pending='!'
+if command -v laptopui-update-count >/dev/null 2>&1; then
+  pending=$(laptopui-update-count)
+fi
+
+case "$pending" in
+  0)
+    printf '%b\n\n' "${cyan}Plot twist: everything already looks current. Checking anyway…${reset}"
+    ;;
+  *[!0-9]*|'')
+    printf '%b\n\n' "${magenta}Counting is hard today. Pacman will know the truth.${reset}"
+    ;;
+  *)
+    printf '%b\n\n' "${magenta}${pending} official package(s) waiting. Release the penguins.${reset}"
+    ;;
+esac
+
 printf '%s\n' 'Refreshing Arch package databases and applying official updates...'
 sudo pacman -Syu
+
+printf '\n%b\n' "${cyan}Update complete. The packages have rejoined the timeline. ✓${reset}"
+if command -v qs >/dev/null 2>&1; then
+  qs -c laptopui ipc call laptopui refreshUpdates >/dev/null 2>&1 || true
+fi

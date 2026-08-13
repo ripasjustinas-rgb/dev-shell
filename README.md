@@ -62,6 +62,8 @@ Kasdieniai klavišai:
 - media kortelė — groti/pristabdyti ir pereiti prie kito MPRIS kūrinio;
 - performance mygtukas — perjungti performance/balanced profilį, jei
   performance profilį pateikia aktyvus `powerprofilesctl` backend'as;
+- update mygtukas — rodo laukiančių oficialių Arch paketų kiekį (nulio
+  nerodo), o paspaudus atidaro spalvotą terminalo updaterį;
 - panelės power mygtukas — logout, restart ir shutdown su patvirtinimu.
 
 Notification serverį valdo Quickshell. `mako.service` šiame profilyje yra

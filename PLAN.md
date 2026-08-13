@@ -96,6 +96,8 @@ SystemTray ir Notifications API. Trumpi išoriniai procesai (`brightnessctl`,
   automatinio spalvų perkrovimo palaikymu;
 - Zsh + Oh My Zsh aplinka su Starship promptu, kuris naudoja Kitty dinaminę
   ANSI paletę, autosuggestions ir syntax highlighting;
+- patikimas oficialių Arch atnaujinimų counteris ir spalvotas ASCII updaterio
+  terminalas su momentiniu panelės perskaičiavimu po atnaujinimo;
 - clipboard istorijos perkėlimas sąmoningai atidėtas vėlesniam etapui.
 
 ## Laptopo ir desktopo profiliai

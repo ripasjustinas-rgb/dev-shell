@@ -2,10 +2,23 @@
 set -eu
 
 if ! command -v checkupdates >/dev/null 2>&1; then
-  printf '%s\n' '—'
+  printf '%s\n' '!'
   exit 0
 fi
 
-# checkupdates reads the sync DB but does not acquire pacman's transaction lock.
-count=$(checkupdates 2>/dev/null | wc -l)
-printf '%s\n' "$count"
+# checkupdates uses a private sync DB and returns 2 when no updates are pending.
+# Do not turn real failures into a misleading zero.
+status=0
+updates=$(checkupdates 2>/dev/null) || status=$?
+
+case "$status" in
+  0)
+    printf '%s\n' "$updates" | awk 'NF { count++ } END { print count + 0 }'
+    ;;
+  2)
+    printf '%s\n' '0'
+    ;;
+  *)
+    printf '%s\n' '!'
+    ;;
+esac

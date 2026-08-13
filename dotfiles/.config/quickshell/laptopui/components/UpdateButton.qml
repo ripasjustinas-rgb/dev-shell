@@ -1,12 +1,13 @@
 import Quickshell
 import Quickshell.Io
 import QtQuick
+import qs.services
 import qs.theme
 
 Rectangle {
     id: root
     property string count: "…"
-    implicitWidth: count === "0" ? 30 : 40
+    implicitWidth: count === "0" ? 30 : Math.max(40, countText.implicitWidth + 12)
     implicitHeight: 26
     radius: Theme.radius
     color: mouse.containsMouse ? Theme.surfaceHover : Theme.surface
@@ -16,6 +17,7 @@ Rectangle {
     }
 
     Text {
+        id: countText
         anchors.centerIn: parent
         text: root.count === "0" ? "󰚰" : "󰚰 " + root.count
         color: root.count === "0" ? Theme.muted : Theme.warningColor
@@ -38,6 +40,11 @@ Rectangle {
                 root.count = value.length ? value : "—"
             }
         }
+    }
+
+    Connections {
+        target: UpdateState
+        function onRevisionChanged() { root.refresh() }
     }
 
     Timer {

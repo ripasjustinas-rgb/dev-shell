@@ -30,6 +30,7 @@ konfigūraciją.
 - `matugen` ir `jq` dinaminei Quickshell, Hyprland ir Kitty wallpaper paletei;
 - Nerd Font ir emoji fontą.
 - `zsh`, `starship`, autosuggestions ir syntax-highlighting interaktyviam shell.
+- `pacman-contrib` ir jo pasirenkama `fakeroot` priklausomybė update counteriui.
 
 Profilio manifestas pridedamas atskirai:
 

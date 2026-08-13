@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Io
 import QtQuick
+import qs.services
 
 Item {
     id: root
@@ -29,6 +30,7 @@ Item {
         function toggleNotifications() { root.notificationsOpen = !root.notificationsOpen; root.controlOpen = false; root.launcherOpen = false }
         function togglePower() { root.powerOpen = !root.powerOpen; root.controlOpen = false; root.launcherOpen = false; root.notificationsOpen = false }
         function osd(kind: string) { osd.show(kind) }
+        function refreshUpdates() { UpdateState.refresh() }
         function closeOverlays() { root.closeOverlays() }
     }
 
