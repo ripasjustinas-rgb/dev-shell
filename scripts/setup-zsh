@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+data_home=${XDG_DATA_HOME:-$HOME/.local/share}
+omz_dir="$data_home/oh-my-zsh"
+set_default=0
+
+usage() {
+  printf '%s\n' \
+    'Usage: ./scripts/setup-zsh [--set-default]' \
+    'Installs Oh My Zsh without replacing managed dotfiles.' \
+    'Use --set-default to also change the login shell with chsh.'
+}
+
+while (( $# )); do
+  case "$1" in
+    --set-default) set_default=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) printf 'error: unexpected argument: %s\n' "$1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+for command_name in git zsh starship; do
+  command -v "$command_name" >/dev/null 2>&1 || {
+    printf 'error: missing %s; run ./install.sh packages --profile <profile> first\n' "$command_name" >&2
+    exit 1
+  }
+done
+
+mkdir -p -- "$data_home"
+if [[ -d "$omz_dir/.git" ]]; then
+  printf 'Oh My Zsh already installed: %s\n' "$omz_dir"
+elif [[ -e "$omz_dir" ]]; then
+  printf 'error: refusing to replace unmanaged path: %s\n' "$omz_dir" >&2
+  exit 1
+else
+  git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git "$omz_dir"
+  printf 'Oh My Zsh installed: %s\n' "$omz_dir"
+fi
+
+if (( set_default )); then
+  zsh_path=$(command -v zsh)
+  current_shell=$(getent passwd "$USER" | cut -d: -f7)
+  if [[ "$current_shell" == "$zsh_path" ]]; then
+    printf 'Login shell already set: %s\n' "$zsh_path"
+  else
+    chsh -s "$zsh_path"
+    printf 'Login shell changed to %s; log out and back in to apply it.\n' "$zsh_path"
+  fi
+else
+  printf '%s\n' 'Run with --set-default when you are ready to make Zsh the login shell.'
+fi

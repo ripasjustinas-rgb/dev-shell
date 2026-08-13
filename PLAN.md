@@ -94,6 +94,8 @@ SystemTray ir Notifications API. Trumpi išoriniai procesai (`brightnessctl`,
   pritaikoma Quickshell, Hyprland ir Kitty spalvoms;
 - „high rice“ Kitty tema su permatomu fonu, Nerd Font, kompaktišku tab bar ir
   automatinio spalvų perkrovimo palaikymu;
+- Zsh + Oh My Zsh aplinka su Starship promptu, kuris naudoja Kitty dinaminę
+  ANSI paletę, autosuggestions ir syntax highlighting;
 - clipboard istorijos perkėlimas sąmoningai atidėtas vėlesniam etapui.
 
 ## Laptopo ir desktopo profiliai

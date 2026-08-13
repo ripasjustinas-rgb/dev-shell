@@ -29,6 +29,7 @@ konfigūraciją.
 - `cava` media vizualizacijai;
 - `matugen` ir `jq` dinaminei Quickshell, Hyprland ir Kitty wallpaper paletei;
 - Nerd Font ir emoji fontą.
+- `zsh`, `starship`, autosuggestions ir syntax-highlighting interaktyviam shell.
 
 Profilio manifestas pridedamas atskirai:
 

@@ -32,6 +32,12 @@ ttf-jetbrains-mono-nerd
 noto-fonts-emoji
 pacman-contrib
 
+# Interactive shell (project scripts intentionally remain Bash)
+zsh
+starship
+zsh-autosuggestions
+zsh-syntax-highlighting
+
 # Current fallback applications
 kitty
 dolphin

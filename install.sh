@@ -64,7 +64,10 @@ manifest() {
     "$repo_dir/dotfiles/.config/hypr" "$home_dir/.config/hypr" \
     "$repo_dir/dotfiles/.config/kitty" "$home_dir/.config/kitty" \
     "$repo_dir/dotfiles/.config/quickshell/laptopui" "$home_dir/.config/quickshell/laptopui" \
+    "$repo_dir/dotfiles/.config/starship.toml" "$home_dir/.config/starship.toml" \
     "$repo_dir/dotfiles/.config/waybar" "$home_dir/.config/waybar" \
+    "$repo_dir/dotfiles/.zprofile" "$home_dir/.zprofile" \
+    "$repo_dir/dotfiles/.zshrc" "$home_dir/.zshrc" \
     "$repo_dir/dotfiles/.local/bin/launcher" "$home_dir/.local/bin/launcher" \
     "$repo_dir/dotfiles/.local/bin/power-menu" "$home_dir/.local/bin/power-menu" \
     "$repo_dir/dotfiles/.local/bin/power-profile-menu" "$home_dir/.local/bin/power-profile-menu" \

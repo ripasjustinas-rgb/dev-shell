@@ -1,0 +1,60 @@
+# The prompt intentionally uses ANSI color names. Kitty maps them to the
+# active matugen wallpaper palette, keeping shell and terminal in sync.
+add_newline = true
+command_timeout = 1000
+
+format = """
+[](bright-blue)\
+$os\
+$username\
+[](fg:bright-blue bg:blue)\
+$directory\
+[](fg:blue bg:magenta)\
+$git_branch\
+$git_status\
+[](fg:magenta bg:cyan)\
+$cmd_duration\
+[](fg:cyan)\
+$line_break\
+$character"""
+
+[os]
+disabled = false
+style = "bg:bright-blue fg:black bold"
+
+[os.symbols]
+Arch = "󰣇 "
+Linux = "󰌽 "
+
+[username]
+show_always = true
+style_user = "bg:bright-blue fg:black bold"
+style_root = "bg:bright-blue fg:red bold"
+format = "[$user ]($style)"
+
+[directory]
+style = "bg:blue fg:black bold"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncate_to_repo = true
+read_only = " 󰌾"
+
+[git_branch]
+symbol = " "
+style = "bg:magenta fg:black bold"
+format = "[ $symbol$branch ]($style)"
+
+[git_status]
+style = "bg:magenta fg:black bold"
+format = "[$all_status$ahead_behind ]($style)"
+
+[cmd_duration]
+min_time = 500
+show_milliseconds = false
+style = "bg:cyan fg:black bold"
+format = "[ 󰔛 $duration ]($style)"
+
+[character]
+success_symbol = "[❯](bold bright-blue)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold green)"

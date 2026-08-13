@@ -66,3 +66,12 @@ Kasdieniai klavišai:
 
 Notification serverį valdo Quickshell. `mako.service` šiame profilyje yra
 išjungtas, kad nepradėtų konkuruojančio daemon'o.
+
+Interaktyvi terminalo aplinka naudoja Zsh, Oh My Zsh ir Starship. Bash lieka
+visų repo skriptų interpretatoriumi. Po paketų ir dotfiles įdiegimo Oh My Zsh
+paruošiamas atskirai, o login shell pakeičiamas tik aiškiai paprašius:
+
+```sh
+./scripts/setup-zsh
+./scripts/setup-zsh --set-default
+```
