@@ -27,7 +27,7 @@ konfigūraciją.
 - PipeWire/WirePlumber, NetworkManager, BlueZ ir UPower;
 - launcher, notification, clipboard, screenshot ir lock/idle įrankius;
 - `cava` media vizualizacijai;
-- `matugen` ir `jq` dinaminei wallpaper paletei;
+- `matugen` ir `jq` dinaminei Quickshell, Hyprland ir Kitty wallpaper paletei;
 - Nerd Font ir emoji fontą.
 
 Profilio manifestas pridedamas atskirai:

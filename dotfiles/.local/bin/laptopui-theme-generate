@@ -4,6 +4,7 @@ set -euo pipefail
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui"
 wallpaper_file="$state_dir/wallpaper"
 palette_file="$state_dir/colors.json"
+kitty_palette_file="$state_dir/kitty-colors.conf"
 wallpaper=${1:-}
 
 if [[ -z "$wallpaper" || "$wallpaper" == "--current" ]]; then
@@ -17,7 +18,8 @@ command -v jq >/dev/null 2>&1 || exit 0
 mkdir -p "$state_dir"
 raw_file=$(mktemp "$state_dir/matugen.XXXXXX")
 next_file=$(mktemp "$state_dir/colors.XXXXXX")
-cleanup() { rm -f -- "$raw_file" "$next_file"; }
+kitty_next_file=$(mktemp "$state_dir/kitty-colors.XXXXXX")
+cleanup() { rm -f -- "$raw_file" "$next_file" "$kitty_next_file"; }
 trap cleanup EXIT
 
 matugen image "$wallpaper" -m dark -t scheme-tonal-spot --prefer saturation --json hex >"$raw_file"
@@ -38,6 +40,51 @@ jq '
 ' "$raw_file" >"$next_file"
 
 jq -e 'all(.[]; type == "string" and test("^#[0-9a-fA-F]{6}$"))' "$next_file" >/dev/null
+
+# Keep ANSI colors coherent with Material You without forcing applications to
+# understand the JSON palette. Kitty reloads this file on SIGUSR1.
+jq -r '
+  def hex: if type == "string" then . else (.default.color // .dark.color) end;
+  .colors | [
+    "foreground " + (.on_surface | hex),
+    "background " + (.surface | hex),
+    "selection_foreground " + (.on_primary | hex),
+    "selection_background " + (.primary | hex),
+    "cursor " + (.primary | hex),
+    "cursor_text_color " + (.on_primary | hex),
+    "url_color " + (.secondary | hex),
+    "active_border_color " + (.primary | hex),
+    "inactive_border_color " + (.outline_variant | hex),
+    "bell_border_color " + (.tertiary | hex),
+    "active_tab_foreground " + (.on_primary | hex),
+    "active_tab_background " + (.primary | hex),
+    "inactive_tab_foreground " + (.on_surface_variant | hex),
+    "inactive_tab_background " + (.surface_container | hex),
+    "tab_bar_background " + (.surface | hex),
+    "color0 " + (.surface | hex),
+    "color1 " + (.error | hex),
+    "color2 " + (.tertiary | hex),
+    "color3 " + (.inverse_primary | hex),
+    "color4 " + (.primary | hex),
+    "color5 " + (.secondary | hex),
+    "color6 " + (.tertiary_fixed_dim | hex),
+    "color7 " + (.on_surface | hex),
+    "color8 " + (.surface_variant | hex),
+    "color9 " + (.error_container | hex),
+    "color10 " + (.tertiary_fixed | hex),
+    "color11 " + (.primary_fixed | hex),
+    "color12 " + (.primary_fixed_dim | hex),
+    "color13 " + (.secondary_fixed | hex),
+    "color14 " + (.tertiary_fixed | hex),
+    "color15 " + (.surface_bright | hex)
+  ] | .[]
+' "$raw_file" >"$kitty_next_file"
+
 chmod 0644 "$next_file"
+chmod 0644 "$kitty_next_file"
 mv -f -- "$next_file" "$palette_file"
+mv -f -- "$kitty_next_file" "$kitty_palette_file"
 laptopui-apply-hypr-theme "$palette_file" >/dev/null 2>&1 || true
+if pgrep -x kitty >/dev/null 2>&1; then
+  pkill -USR1 -x kitty >/dev/null 2>&1 || true
+fi

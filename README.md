@@ -18,7 +18,9 @@ notifications, OSD ir power dialogai veikia be Wofi. Panelė taip pat turi
 MPRIS media kortelę, `cava` garso spektro vizualizaciją, CPU/RAM rodmenis ir
 energijos profilio valdiklį. Vizualinis pagrindas naudoja iš
 `NerdMini_shell` pritaikytą „high rice“ stiklo, glow ir animacijų stilių, o
-`matugen` kiekvienam wallpaper'iui sukuria bendrą Quickshell ir Hyprland paletę.
+`matugen` kiekvienam wallpaper'iui sukuria bendrą Quickshell, Hyprland ir Kitty
+paletę. Kitty tema turi permatomą foną, kompaktišką tab bar ir automatiškai
+persikrauna pakeitus wallpaperį.
 Aktyvios namų direktorijos konfigūracijos nekeičiamos, kol neįvykdomas:
 
 ```sh

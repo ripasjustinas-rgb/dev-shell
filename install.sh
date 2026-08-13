@@ -62,6 +62,7 @@ emit_package_list() {
 manifest() {
   printf '%s\t%s\n' \
     "$repo_dir/dotfiles/.config/hypr" "$home_dir/.config/hypr" \
+    "$repo_dir/dotfiles/.config/kitty" "$home_dir/.config/kitty" \
     "$repo_dir/dotfiles/.config/quickshell/laptopui" "$home_dir/.config/quickshell/laptopui" \
     "$repo_dir/dotfiles/.config/waybar" "$home_dir/.config/waybar" \
     "$repo_dir/dotfiles/.local/bin/launcher" "$home_dir/.local/bin/launcher" \

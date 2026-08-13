@@ -91,7 +91,9 @@ SystemTray ir Notifications API. Trumpi išoriniai procesai (`brightnessctl`,
 - MPRIS media kortelė ir `cava` spektro vizualizacija panelės centre;
 - gyvi CPU/RAM rodmenys ir saugus `powerprofilesctl` performance valdiklis;
 - automatinė `matugen` Material You paletė iš aktyvaus wallpaper'io, gyvai
-  pritaikoma Quickshell ir Hyprland spalvoms;
+  pritaikoma Quickshell, Hyprland ir Kitty spalvoms;
+- „high rice“ Kitty tema su permatomu fonu, Nerd Font, kompaktišku tab bar ir
+  automatinio spalvų perkrovimo palaikymu;
 - clipboard istorijos perkėlimas sąmoningai atidėtas vėlesniam etapui.
 
 ## Laptopo ir desktopo profiliai
