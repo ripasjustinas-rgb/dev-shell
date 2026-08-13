@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+state_root="${XDG_STATE_HOME:-$HOME/.local/state}/dev-shell"
+sddm_state="$state_root/sddm"
+lock_state="$state_root/lock"
+desktop_state="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui"
+palette="$sddm_state/colors.json"
+wallpaper="$sddm_state/preview/laptopui/background.jpg"
+
+mkdir -p -- "$lock_state"
+if [[ ! -s "$wallpaper" ]]; then
+  wallpaper=""
+  [[ -r "$sddm_state/wallpaper" ]] && wallpaper=$(<"$sddm_state/wallpaper")
+  [[ -n "$wallpaper" && -s "$wallpaper" ]] || {
+    [[ -r "$desktop_state/wallpaper" ]] && wallpaper=$(<"$desktop_state/wallpaper")
+  }
+fi
+[[ -n "$wallpaper" && -s "$wallpaper" ]] || {
+  printf '%s\n' 'error: no lock wallpaper is available' >&2
+  exit 1
+}
+
+ln -sfn -- "$wallpaper" "$lock_state/background.jpg"
+
+color() {
+  local key=$1 fallback=$2
+  jq -er --arg key "$key" '.[$key] | select(type == "string" and test("^#[0-9a-fA-F]{6}$"))' \
+    "$palette" 2>/dev/null || printf '%s\n' "$fallback"
+}
+
+primary=$(color primary '#dabaf9')
+surface=$(color surface '#151218')
+foreground=$(color on_surface '#e8e0e8')
+muted=$(color on_surface_variant '#ccc4cf')
+outline=$(color outline '#968e98')
+error=$(color error '#ffb4ab')
+next=$(mktemp "$lock_state/colors.XXXXXX")
+{
+  printf '$primary = rgb(%s)\n' "${primary#\#}"
+  printf '$surface = rgb(%s)\n' "${surface#\#}"
+  printf '$foreground = rgb(%s)\n' "${foreground#\#}"
+  printf '$muted = rgb(%s)\n' "${muted#\#}"
+  printf '$outline = rgba(%see)\n' "${outline#\#}"
+  printf '$error = rgb(%s)\n' "${error#\#}"
+  printf '$veil = rgba(%s99)\n' "${surface#\#}"
+  printf '$card = rgba(%sdb)\n' "${surface#\#}"
+  printf '$field = rgba(%sbb)\n' "${surface#\#}"
+  printf '$mutedSoft = rgba(%sb8)\n' "${muted#\#}"
+} >"$next"
+chmod 0600 "$next"
+mv -f -- "$next" "$lock_state/colors.conf"
+
+exec hyprlock --config "$HOME/.config/hypr/hyprlock.conf" "$@"

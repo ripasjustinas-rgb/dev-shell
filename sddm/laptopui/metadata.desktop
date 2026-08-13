@@ -1,0 +1,11 @@
+[SddmGreeterTheme]
+Name=LaptopUI
+Description=Dynamic glass login theme for dev-shell
+Author=ripasjustinas-rgb
+License=MIT
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=laptopui
+Theme-API=2.0

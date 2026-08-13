@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+action=${1:-}
+internal_monitor=${LAPTOPUI_INTERNAL_MONITOR:-eDP-1}
+state_dir="${XDG_RUNTIME_DIR:-/run/user/$UID}/laptopui"
+timer_state="$state_dir/lid-suspend-unit"
+
+cancel_suspend() {
+  local timer_unit=""
+  [[ -r "$timer_state" ]] && timer_unit=$(<"$timer_state")
+  if [[ "$timer_unit" =~ ^laptopui-lid-suspend-[0-9]+-[0-9]+$ ]]; then
+    systemctl --user stop "$timer_unit.timer" "$timer_unit.service" 2>/dev/null || true
+    systemctl --user reset-failed "$timer_unit.timer" "$timer_unit.service" 2>/dev/null || true
+  fi
+  rm -f -- "$timer_state"
+}
+
+case "$action" in
+  close)
+    mkdir -p -- "$state_dir"
+    cancel_suspend
+    hyprctl dispatch "hl.dsp.dpms({action = \"off\", monitor = \"$internal_monitor\"})" >/dev/null
+    timer_unit="laptopui-lid-suspend-$(date +%s)-$$"
+    systemd-run --user --quiet \
+      --unit="$timer_unit" --on-active=5m --timer-property=AccuracySec=1s \
+      /usr/bin/systemctl suspend
+    printf '%s\n' "$timer_unit" >"$timer_state"
+    ;;
+  open)
+    cancel_suspend
+    hyprctl dispatch "hl.dsp.dpms({action = \"on\", monitor = \"$internal_monitor\"})" >/dev/null
+    ;;
+  *)
+    printf '%s\n' 'Usage: laptopui-lid <close|open>' >&2
+    exit 2
+    ;;
+esac

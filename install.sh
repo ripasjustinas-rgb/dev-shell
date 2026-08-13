@@ -65,6 +65,8 @@ manifest() {
     "$repo_dir/dotfiles/.config/kitty" "$home_dir/.config/kitty" \
     "$repo_dir/dotfiles/.config/quickshell/laptopui" "$home_dir/.config/quickshell/laptopui" \
     "$repo_dir/dotfiles/.config/starship.toml" "$home_dir/.config/starship.toml" \
+    "$repo_dir/dotfiles/.config/systemd/user/laptopui-hypridle.service" "$home_dir/.config/systemd/user/laptopui-hypridle.service" \
+    "$repo_dir/dotfiles/.config/systemd/user/laptopui-lid-inhibit.service" "$home_dir/.config/systemd/user/laptopui-lid-inhibit.service" \
     "$repo_dir/dotfiles/.config/waybar" "$home_dir/.config/waybar" \
     "$repo_dir/dotfiles/.zprofile" "$home_dir/.zprofile" \
     "$repo_dir/dotfiles/.zshrc" "$home_dir/.zshrc" \
@@ -80,6 +82,8 @@ manifest() {
     "$repo_dir/dotfiles/.local/bin/laptopui-theme-generate" "$home_dir/.local/bin/laptopui-theme-generate" \
     "$repo_dir/dotfiles/.local/bin/laptopui-apply-hypr-theme" "$home_dir/.local/bin/laptopui-apply-hypr-theme" \
     "$repo_dir/dotfiles/.local/bin/laptopui-launcher-pin" "$home_dir/.local/bin/laptopui-launcher-pin" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-lock" "$home_dir/.local/bin/laptopui-lock" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-lid" "$home_dir/.local/bin/laptopui-lid" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-next" "$home_dir/.local/bin/laptopui-wallpaper-next" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-random" "$home_dir/.local/bin/laptopui-wallpaper-random" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-restore" "$home_dir/.local/bin/laptopui-wallpaper-restore"

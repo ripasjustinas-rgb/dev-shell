@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
+source_theme="$repo_dir/sddm/laptopui"
+state_root="${XDG_STATE_HOME:-$HOME/.local/state}/dev-shell/sddm"
+preview_root="$state_root/preview"
+preview_theme="$preview_root/laptopui"
+backup_root="/var/lib/dev-shell/sddm-backups"
+installed_theme="/usr/share/sddm/themes/laptopui"
+installed_config="/etc/sddm.conf.d/10-laptopui-theme.conf"
+
+usage() {
+  printf '%s\n' \
+    'Usage: ./scripts/sddm-theme <command> [argument]' \
+    '  set-wallpaper FILE  Pin an SDDM-only wallpaper and generate its palette.' \
+    '  prepare   Build a user-readable preview from the pinned wallpaper/palette.' \
+    '  validate  Parse QML and verify every required theme asset.' \
+    '  preview   Open official SDDM test mode; login and power actions are inert.' \
+    '  install   Copy the validated theme and enable it without restarting SDDM.' \
+    '  status    Show active config, installed theme and available backups.' \
+    '  restore   Restore one backup id (or latest) without restarting SDDM.'
+}
+
+die() { printf 'error: %s\n' "$*" >&2; exit 1; }
+
+palette_value() {
+  local key=$1 fallback=$2 palette=$3
+  if [[ -f "$palette" ]] && command -v jq >/dev/null 2>&1; then
+    jq -er --arg key "$key" '.[$key] | select(type == "string" and test("^#[0-9a-fA-F]{6}$"))' "$palette" 2>/dev/null || printf '%s\n' "$fallback"
+  else
+    printf '%s\n' "$fallback"
+  fi
+}
+
+generate_palette() {
+  local wallpaper=$1 palette=$2 raw next
+  command -v matugen >/dev/null 2>&1 || die 'matugen is required to generate the SDDM palette'
+  command -v jq >/dev/null 2>&1 || die 'jq is required to generate the SDDM palette'
+  mkdir -p -- "$(dirname -- "$palette")"
+  raw=$(mktemp "$state_root/matugen.XXXXXX")
+  next=$(mktemp "$state_root/colors.XXXXXX")
+  trap 'rm -f -- "$raw" "$next"' RETURN
+  matugen image "$wallpaper" -m dark -t scheme-tonal-spot --prefer saturation --json hex >"$raw"
+  jq '
+    def hex: if type == "string" then . else (.default.color // .dark.color) end;
+    .colors | {
+      primary: (.primary | hex),
+      on_primary: (.on_primary | hex),
+      secondary: (.secondary | hex),
+      surface: (.surface | hex),
+      surface_variant: (.surface_variant | hex),
+      on_surface: (.on_surface | hex),
+      on_surface_variant: (.on_surface_variant | hex),
+      outline: (.outline | hex),
+      error: (.error | hex)
+    }
+  ' "$raw" >"$next"
+  jq -e 'all(.[]; type == "string" and test("^#[0-9a-fA-F]{6}$"))' "$next" >/dev/null
+  chmod 0644 "$next"
+  mv -f -- "$next" "$palette"
+  trap - RETURN
+  rm -f -- "$raw"
+}
+
+set_wallpaper() {
+  local requested=$1 wallpaper palette="$state_root/colors.json"
+  [[ -f "$requested" ]] || die "wallpaper not found: $requested"
+  wallpaper=$(realpath -- "$requested")
+  case "${wallpaper,,}" in
+    *.jpg|*.jpeg|*.png|*.webp) ;;
+    *) die 'wallpaper must be a jpg, jpeg, png or webp image' ;;
+  esac
+  mkdir -p -- "$state_root"
+  generate_palette "$wallpaper" "$palette"
+  printf '%s\n' "$wallpaper" >"$state_root/wallpaper"
+  printf 'pinned SDDM wallpaper: %s\n' "$wallpaper"
+  printf '%s\n' 'Run preview, then install when the result looks right.'
+}
+
+prepare() {
+  local laptopui_state="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui"
+  local wallpaper="" palette=""
+  if [[ -f "$state_root/wallpaper" ]]; then
+    wallpaper=$(<"$state_root/wallpaper")
+    palette="$state_root/colors.json"
+  else
+    [[ -f "$laptopui_state/wallpaper" ]] && wallpaper=$(<"$laptopui_state/wallpaper")
+    palette="$laptopui_state/colors.json"
+  fi
+  [[ -n "$wallpaper" && -f "$wallpaper" ]] || die 'active wallpaper is unavailable; use laptopui-wallpaper-next first'
+
+  mkdir -p -- "$preview_root"
+  if [[ -e "$preview_theme" ]]; then
+    find "$preview_theme" -type f -delete
+    find "$preview_theme" -type l -delete
+    find "$preview_theme" -depth -type d -exec rmdir -- {} \; 2>/dev/null || true
+  fi
+  mkdir -p -- "$preview_theme"
+  cp -a -- "$source_theme/." "$preview_theme/"
+  cp -- "$wallpaper" "$preview_theme/background.jpg"
+
+  {
+    printf '%s\n' '[General]' 'Background=background.jpg'
+    printf 'Primary=%s\n' "$(palette_value primary '#dabaf9' "$palette")"
+    printf 'OnPrimary=%s\n' "$(palette_value on_primary '#3e2459' "$palette")"
+    printf 'Secondary=%s\n' "$(palette_value secondary '#d0c1da' "$palette")"
+    printf 'Surface=%s\n' "$(palette_value surface '#151218' "$palette")"
+    printf 'SurfaceVariant=%s\n' "$(palette_value surface_variant '#4a454e' "$palette")"
+    printf 'OnSurface=%s\n' "$(palette_value on_surface '#e8e0e8' "$palette")"
+    printf 'OnSurfaceVariant=%s\n' "$(palette_value on_surface_variant '#ccc4cf' "$palette")"
+    printf 'Outline=%s\n' "$(palette_value outline '#968e98' "$palette")"
+    printf 'Error=%s\n' "$(palette_value error '#ffb4ab' "$palette")"
+    printf '%s\n' 'FontFamily=JetBrainsMono Nerd Font'
+    printf '%s\n' 'DefaultUser=justas'
+  } >"$preview_theme/theme.conf.user"
+  chmod -R a+rX "$preview_theme"
+  printf 'prepared: %s\n' "$preview_theme"
+}
+
+validate() {
+  [[ -f "$preview_theme/Main.qml" ]] || prepare
+  for file in Main.qml metadata.desktop theme.conf theme.conf.user background.jpg; do
+    [[ -s "$preview_theme/$file" ]] || die "missing preview asset: $file"
+  done
+  [[ -f /usr/lib/qt/qml/QtQuick/Controls.2/qmldir ]] \
+    || die 'Qt5 Quick Controls 2 is required (sudo pacman -S --needed qt5-quickcontrols2)'
+  command -v qmllint >/dev/null 2>&1 || die 'qmllint is required (qt6-declarative)'
+  local output status=0
+  output=$(qmllint -I /usr/lib/qt6/qml "$preview_theme/Main.qml" 2>&1) || status=$?
+  [[ $status -eq 0 ]] || { printf '%s\n' "$output" >&2; die 'QML validation failed'; }
+  printf '%s\n' 'validation passed'
+}
+
+preview() {
+  prepare
+  validate
+  command -v sddm-greeter >/dev/null 2>&1 || die 'sddm-greeter is not installed'
+  exec sddm-greeter --test-mode --theme "$preview_theme"
+}
+
+install_theme() {
+  prepare
+  validate
+  local backup_id
+  backup_id=$(date -u +%Y%m%dT%H%M%SZ)
+  printf '%s\n' \
+    'This copies a validated theme into /usr/share/sddm/themes and selects it.' \
+    'SDDM will NOT be restarted. Keep a TTY available for the first logout/reboot.'
+  sudo mkdir -p -- "$backup_root/$backup_id" /etc/sddm.conf.d
+  if sudo test -e "$installed_config"; then
+    sudo cp -a -- "$installed_config" "$backup_root/$backup_id/config.before"
+  else
+    sudo touch "$backup_root/$backup_id/config.absent"
+  fi
+  if sudo test -e "$installed_theme"; then
+    sudo cp -a -- "$installed_theme" "$backup_root/$backup_id/theme.before"
+  else
+    sudo touch "$backup_root/$backup_id/theme.absent"
+  fi
+  sudo mkdir -p -- "$installed_theme"
+  sudo find "$installed_theme" -mindepth 1 -type f -delete
+  sudo find "$installed_theme" -mindepth 1 -type l -delete
+  sudo find "$installed_theme" -mindepth 1 -depth -type d -exec rmdir -- {} \; 2>/dev/null || true
+  sudo cp -a -- "$preview_theme/." "$installed_theme/"
+  printf '%s\n' '[Theme]' 'Current=laptopui' 'Font=JetBrainsMono Nerd Font' \
+    | sudo tee "$installed_config" >/dev/null
+  sudo chmod -R a+rX "$installed_theme"
+  printf 'installed; backup id: %s\n' "$backup_id"
+  printf '%s\n' 'Do not restart sddm from this graphical session. Log out or reboot when ready.'
+}
+
+status_theme() {
+  printf 'service: '; systemctl is-active sddm 2>/dev/null || true
+  printf 'configured theme: '
+  if [[ -r "$installed_config" ]]; then sed -n 's/^Current=//p' "$installed_config"; else printf 'default\n'; fi
+  printf 'installed assets: '; [[ -s "$installed_theme/Main.qml" ]] && printf 'present\n' || printf 'missing\n'
+  printf 'preview: '; [[ -s "$preview_theme/Main.qml" ]] && printf '%s\n' "$preview_theme" || printf 'not prepared\n'
+  printf 'pinned wallpaper: '
+  if [[ -r "$state_root/wallpaper" ]]; then cat "$state_root/wallpaper"; else printf 'none (current desktop fallback)\n'; fi
+  printf 'backups: '
+  if [[ -r "$backup_root" ]]; then
+    find "$backup_root" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort
+  else
+    printf 'none or root-only\n'
+  fi
+}
+
+restore_theme() {
+  local backup_id=${1:-}
+  if [[ -z "$backup_id" ]]; then
+    backup_id=$(sudo find "$backup_root" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort | tail -n 1)
+  fi
+  [[ "$backup_id" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || die 'restore requires a valid backup id (or an existing latest backup)'
+  local backup="$backup_root/$backup_id"
+  sudo test -d "$backup" || die "backup not found: $backup_id"
+
+  if sudo test -f "$backup/config.before"; then
+    sudo cp -a -- "$backup/config.before" "$installed_config"
+  else
+    sudo rm -f -- "$installed_config"
+  fi
+  if sudo test -d "$backup/theme.before"; then
+    sudo find "$installed_theme" -mindepth 1 -delete 2>/dev/null || true
+    sudo rmdir -- "$installed_theme" 2>/dev/null || true
+    sudo cp -a -- "$backup/theme.before" "$installed_theme"
+  else
+    sudo find "$installed_theme" -mindepth 1 -delete 2>/dev/null || true
+    sudo rmdir -- "$installed_theme" 2>/dev/null || true
+  fi
+  printf 'restored backup: %s\n' "$backup_id"
+  printf '%s\n' 'SDDM was not restarted. Reboot or log out when ready.'
+}
+
+command=${1:-}
+shift || true
+case "$command" in
+  set-wallpaper) [[ $# -eq 1 ]] || die 'set-wallpaper requires exactly one image path'; set_wallpaper "$1" ;;
+  prepare) [[ $# -eq 0 ]] || die 'prepare takes no arguments'; prepare ;;
+  validate) [[ $# -eq 0 ]] || die 'validate takes no arguments'; validate ;;
+  preview) [[ $# -eq 0 ]] || die 'preview takes no arguments'; preview ;;
+  install) [[ $# -eq 0 ]] || die 'install takes no arguments'; install_theme ;;
+  status) [[ $# -eq 0 ]] || die 'status takes no arguments'; status_theme ;;
+  restore) [[ $# -le 1 ]] || die 'restore accepts at most one backup id'; restore_theme "${1:-}" ;;
+  -h|--help|help|'') usage ;;
+  *) usage >&2; exit 2 ;;
+esac

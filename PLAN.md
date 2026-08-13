@@ -104,6 +104,11 @@ SystemTray ir Notifications API. Trumpi išoriniai procesai (`brightnessctl`,
   rodomas prieš orų ikoną;
 - iš seno max-rice atkurta adaptyvi bass transientų detekcija, dviguba per
   centrinį bloką nubėganti banga ir visualizerio peak burst efektas;
+- atskirai previewinama LaptopUI SDDM tema su rankiniu būdu fiksuojamu login
+  wallpaperiu, jo `matugen` palete, saugiu backup/restore ir be automatinio
+  display manager perkrovimo;
+- SDDM stilių atkartojantis `hyprlock`, `SUPER+L`, 5/10/20 min. lock/DPMS/
+  suspend eiga ir atskiras lid-close 5 min. suspend timeris;
 - clipboard istorijos perkėlimas sąmoningai atidėtas vėlesniam etapui.
 
 ## Laptopo ir desktopo profiliai

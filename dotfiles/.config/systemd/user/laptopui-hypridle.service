@@ -1,0 +1,10 @@
+[Unit]
+Description=LaptopUI idle and lock manager
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/hypridle --config=%h/.config/hypr/hypridle.conf
+Restart=on-failure
+RestartSec=2

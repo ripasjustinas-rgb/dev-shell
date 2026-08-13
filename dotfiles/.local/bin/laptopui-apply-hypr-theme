@@ -27,8 +27,12 @@ lua_config=$(printf '%s\n' \
   '  } },' \
   '})')
 
-if ! hyprctl -r eval "$lua_config" >/dev/null 2>&1; then
-  hyprctl keyword general:col.active_border "rgba(${primary}ff) rgba(${secondary}ff) 45deg" >/dev/null 2>&1 || true
-  hyprctl keyword general:col.inactive_border "rgba(${outline}aa)" >/dev/null 2>&1 || true
-  hyprctl keyword decoration:shadow:color "rgba(${surface}ea)" >/dev/null 2>&1 || true
+if hyprctl -r eval "$lua_config" >/dev/null; then
+  exit 0
 fi
+
+# Compatibility fallback for older Hyprland releases. Do not hide failures:
+# callers preserve stderr in ~/.local/state/laptopui/theme-errors.log.
+hyprctl keyword general:col.active_border "rgba(${primary}ff) rgba(${secondary}ff) 45deg" >/dev/null
+hyprctl keyword general:col.inactive_border "rgba(${outline}aa)" >/dev/null
+hyprctl keyword decoration:shadow:color "rgba(${surface}ea)" >/dev/null

@@ -2,8 +2,10 @@ hl.config({
   general = {
     gaps_in = 5, gaps_out = 20, border_size = 2,
     col = {
-      active_border = { colors = {"rgba(33ccffee)", "rgba(00ff99ee)"}, angle = 45 },
-      inactive_border = "rgba(595959aa)",
+      -- Material fallback used only until the runtime matugen palette is
+      -- applied. Avoid Hyprland's cyan/green sample colors on first frame.
+      active_border = { colors = {"rgba(dabaf9ff)", "rgba(d0c1daff)"}, angle = 45 },
+      inactive_border = "rgba(968e98aa)",
     },
     resize_on_border = false, allow_tearing = false, layout = "dwindle",
   },

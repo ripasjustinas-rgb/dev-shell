@@ -12,6 +12,13 @@ Pilna prerequisites ir saugaus perkėlimo eiga aprašyta
 [docs/PREREQUISITES.md](docs/PREREQUISITES.md) bei
 [docs/DESKTOP_PORT.md](docs/DESKTOP_PORT.md).
 
+SDDM login ekranui paruošta atskirai previewinama ir atkuriama LaptopUI tema.
+Jos saugi diegimo eiga aprašyta [docs/SDDM.md](docs/SDDM.md); tema nėra
+aktyvuojama kartu su įprastu dotfiles diegimu.
+
+Tą patį wallpaperį ir paletę naudojantis `hyprlock`, 5/10/20 min. idle eiga
+bei atidėtas lid suspend aprašyti [docs/LOCK_IDLE.md](docs/LOCK_IDLE.md).
+
 Waybar konfigūracija išlaikoma tik kaip avarinis fallback. Aktyvus shell yra
 Quickshell `laptopui`: panelė, wallpaper, launcher, control center,
 notifications, OSD ir power dialogai veikia be Wofi. Panelė taip pat turi
