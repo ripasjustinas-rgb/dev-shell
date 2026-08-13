@@ -74,6 +74,7 @@ manifest() {
     "$repo_dir/dotfiles/.local/bin/power-profile-status" "$home_dir/.local/bin/power-profile-status" \
     "$repo_dir/dotfiles/.local/bin/laptopui-update-count" "$home_dir/.local/bin/laptopui-update-count" \
     "$repo_dir/dotfiles/.local/bin/laptopui-update" "$home_dir/.local/bin/laptopui-update" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-weather" "$home_dir/.local/bin/laptopui-weather" \
     "$repo_dir/dotfiles/.local/bin/laptopui-audio-spectrum" "$home_dir/.local/bin/laptopui-audio-spectrum" \
     "$repo_dir/dotfiles/.local/bin/laptopui-visualizer-daemon" "$home_dir/.local/bin/laptopui-visualizer-daemon" \
     "$repo_dir/dotfiles/.local/bin/laptopui-theme-generate" "$home_dir/.local/bin/laptopui-theme-generate" \

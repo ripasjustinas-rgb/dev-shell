@@ -139,18 +139,9 @@ Item {
                     SystemGroup {}
                 }
 
-                ClockWeather {
-                    id: clockWeather
-                    z: 3
-                    anchors.centerIn: parent
-                }
-
                 RowLayout {
                     z: 3
-                    visible: root.activeMediaPlayer !== null
-                    anchors.left: clockWeather.right
-                    anchors.leftMargin: 12
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.centerIn: parent
                     spacing: 7
 
                     MediaVisualizerWing {
@@ -158,7 +149,11 @@ Item {
                         mirrored: true
                         spectrumData: root.spectrumData
                     }
+
+                    ClockWeather {}
+
                     MediaPill { player: root.activeMediaPlayer }
+
                     MediaVisualizerWing {
                         active: root.activeMediaPlayer !== null
                         spectrumData: root.spectrumData

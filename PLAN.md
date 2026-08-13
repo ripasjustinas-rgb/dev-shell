@@ -98,6 +98,10 @@ SystemTray ir Notifications API. Trumpi išoriniai procesai (`brightnessctl`,
   ANSI paletę, autosuggestions ir syntax highlighting;
 - patikimas oficialių Arch atnaujinimų counteris ir spalvotas ASCII updaterio
   terminalas su momentiniu panelės perskaičiavimu po atnaujinimo;
+- didelė dinaminė Nerd Font orų ikona kairėje nuo datos ir vietos, su
+  dienos/nakties bei pagrindinių oro sąlygų būsenomis;
+- viena centruojama weather/clock/media grupė, kurios kairysis vizualizatorius
+  rodomas prieš orų ikoną;
 - clipboard istorijos perkėlimas sąmoningai atidėtas vėlesniam etapui.
 
 ## Laptopo ir desktopo profiliai

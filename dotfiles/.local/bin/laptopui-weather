@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+set -eu
+
+location=${LAPTOPUI_WEATHER_LOCATION:-Vilnius}
+command -v curl >/dev/null 2>&1 || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+
+payload=$(curl --connect-timeout 3 --max-time 8 -fsSL \
+  "https://wttr.in/${location}?format=j1") || exit 0
+
+printf '%s' "$payload" | jq -er '
+  .current_condition[0]
+  | select(.weatherCode | test("^[0-9]+$"))
+  | select(.temp_C | test("^-?[0-9]+$"))
+  | select(.windspeedKmph | test("^[0-9]+$"))
+  | [
+      .weatherCode,
+      .temp_C,
+      .windspeedKmph,
+      (.weatherDesc[0].value | gsub("[[:space:]]+$"; ""))
+    ]
+  | @tsv
+' 2>/dev/null || true

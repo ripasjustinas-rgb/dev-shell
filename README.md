@@ -16,7 +16,11 @@ Waybar konfigūracija išlaikoma tik kaip avarinis fallback. Aktyvus shell yra
 Quickshell `laptopui`: panelė, wallpaper, launcher, control center,
 notifications, OSD ir power dialogai veikia be Wofi. Panelė taip pat turi
 MPRIS media kortelę, `cava` garso spektro vizualizaciją, CPU/RAM rodmenis ir
-energijos profilio valdiklį. Vizualinis pagrindas naudoja iš
+energijos profilio valdiklį. Centrinis datos ir vietos blokas papildytas didele
+Nerd Font orų ikona kairėje, kuri skiria dieną, naktį, debesis, rūką,
+kritulius, audrą ir stiprų vėją. Grojant media, kairysis vizualizatorius
+persikelia prieš orų ikoną, o visa weather/clock/media grupė centruojama kartu.
+Vizualinis pagrindas naudoja iš
 `NerdMini_shell` pritaikytą „high rice“ stiklo, glow ir animacijų stilių, o
 `matugen` kiekvienam wallpaper'iui sukuria bendrą Quickshell, Hyprland ir Kitty
 paletę. Kitty tema turi permatomą foną, kompaktišką tab bar ir automatiškai
