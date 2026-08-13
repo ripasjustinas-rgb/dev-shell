@@ -5,6 +5,8 @@ state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui"
 wallpaper_file="$state_dir/wallpaper"
 palette_file="$state_dir/colors.json"
 kitty_palette_file="$state_dir/kitty-colors.conf"
+helper_dir="$HOME/.local/bin"
+theme_error_log="$state_dir/theme-errors.log"
 wallpaper=${1:-}
 
 if [[ -z "$wallpaper" || "$wallpaper" == "--current" ]]; then
@@ -84,7 +86,8 @@ chmod 0644 "$next_file"
 chmod 0644 "$kitty_next_file"
 mv -f -- "$next_file" "$palette_file"
 mv -f -- "$kitty_next_file" "$kitty_palette_file"
-laptopui-apply-hypr-theme "$palette_file" >/dev/null 2>&1 || true
+"$helper_dir/laptopui-apply-hypr-theme" "$palette_file" \
+  >/dev/null 2>>"$theme_error_log" || true
 if pgrep -x kitty >/dev/null 2>&1; then
   pkill -USR1 -x kitty >/dev/null 2>&1 || true
 fi

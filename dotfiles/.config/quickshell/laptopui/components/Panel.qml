@@ -70,7 +70,9 @@ Item {
         activeMediaPlayer = best
     }
 
-    Component.onCompleted: Quickshell.execDetached(["laptopui-visualizer-daemon"])
+    Component.onCompleted: Quickshell.execDetached([
+        Quickshell.env("HOME") + "/.local/bin/laptopui-visualizer-daemon"
+    ])
 
     Instantiator {
         model: Mpris.players
@@ -93,7 +95,7 @@ Item {
 
     Process {
         id: spectrumProcess
-        command: ["laptopui-audio-spectrum"]
+        command: [Quickshell.env("HOME") + "/.local/bin/laptopui-audio-spectrum"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const raw = text.trim()

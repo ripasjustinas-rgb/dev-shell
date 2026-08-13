@@ -81,6 +81,7 @@ manifest() {
     "$repo_dir/dotfiles/.local/bin/laptopui-apply-hypr-theme" "$home_dir/.local/bin/laptopui-apply-hypr-theme" \
     "$repo_dir/dotfiles/.local/bin/laptopui-launcher-pin" "$home_dir/.local/bin/laptopui-launcher-pin" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-next" "$home_dir/.local/bin/laptopui-wallpaper-next" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-random" "$home_dir/.local/bin/laptopui-wallpaper-random" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-restore" "$home_dir/.local/bin/laptopui-wallpaper-restore"
 }
 

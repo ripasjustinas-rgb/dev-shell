@@ -4,6 +4,8 @@ set -eu
 wallpaper_dir=${LAPTOPUI_WALLPAPER_DIR:-"${HOME}/Wallpapers"}
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui"
 state_file="$state_dir/wallpaper"
+helper_dir="$HOME/.local/bin"
+theme_error_log="$state_dir/theme-errors.log"
 
 [ -d "$wallpaper_dir" ] || exit 0
 
@@ -20,8 +22,11 @@ mkdir -p -- "$state_dir"
 printf '%s\n' "$next" > "$state_file"
 
 # Material You colors are generated into runtime state. ThemeLoader notices the
-# atomic palette replacement and updates Quickshell without a restart.
-laptopui-theme-generate "$next" >/dev/null 2>&1 || true
+# atomic palette replacement and updates Quickshell without a restart. Use the
+# installed path because graphical sessions do not necessarily include
+# ~/.local/bin in PATH. Keep failures non-fatal, but retain them for diagnosis.
+"$helper_dir/laptopui-theme-generate" "$next" \
+    >/dev/null 2>>"$theme_error_log" || true
 
 # Quickshell's persistent background crossfades the state-file change. Keep
 # hyprpaper only as a fallback for a session where Quickshell is unavailable.

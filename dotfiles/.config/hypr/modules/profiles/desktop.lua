@@ -4,8 +4,7 @@
 hl.env("LIBVA_DRIVER_NAME", "nvidia")
 hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 
--- Fill exact outputs after running scripts/desktop-preflight on the desktop.
--- Keep the generic preferred/auto rule from modules/monitors.lua as a safe
--- fallback until then. Example:
--- hl.monitor({ output = "DP-1", mode = "2560x1440@144", position = "0x0", scale = "1" })
--- hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@60", position = "2560x0", scale = "1" })
+-- Xiaomi Mi Monitor: use the highest refresh mode reported by Hyprland.
+-- The generic preferred/auto rule in modules/monitors.lua remains a fallback
+-- for newly connected outputs.
+hl.monitor({ output = "DP-3", mode = "2560x1440@180", position = "0x0", scale = "1" })
