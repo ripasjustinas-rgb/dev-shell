@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+set -eu
+
+state_file="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui/wallpaper"
+wallpaper=$(cat "$state_file" 2>/dev/null || true)
+
+if [ -n "$wallpaper" ] && [ -f "$wallpaper" ]; then
+  laptopui-theme-generate "$wallpaper" >/dev/null 2>&1 || true
+elif [ -x "$HOME/.local/bin/laptopui-wallpaper-next" ]; then
+  "$HOME/.local/bin/laptopui-wallpaper-next"
+fi

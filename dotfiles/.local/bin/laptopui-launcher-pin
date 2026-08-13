@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+set -eu
+
+action=${1:?missing action}
+entry=${2:?missing desktop entry}
+seed=${3:-}
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui"
+state_file="$state_dir/pinned-apps"
+
+mkdir -p -- "$state_dir"
+if [ ! -f "$state_file" ] && [ -n "$seed" ]; then
+    printf '%s' "$seed" | tr ',' '\n' > "$state_file"
+fi
+touch "$state_file"
+
+case "$action" in
+    toggle)
+        temp_file=$(mktemp "$state_dir/pinned-apps.XXXXXX")
+        if grep -Fqx -- "$entry" "$state_file"; then
+            grep -Fvx -- "$entry" "$state_file" > "$temp_file" || true
+        else
+            printf '%s\n' "$entry" > "$temp_file"
+            cat "$state_file" >> "$temp_file"
+        fi
+        mv -- "$temp_file" "$state_file"
+        ;;
+    *) exit 2 ;;
+esac

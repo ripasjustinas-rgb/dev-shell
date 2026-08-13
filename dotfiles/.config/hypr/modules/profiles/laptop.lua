@@ -1,0 +1,2 @@
+-- The common monitor fallback and input configuration are sufficient for the
+-- current laptop. Keep hardware-specific overrides in this file when needed.

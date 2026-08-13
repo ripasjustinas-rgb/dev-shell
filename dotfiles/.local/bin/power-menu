@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+exec qs -c laptopui ipc call laptopui togglePower

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+set -eu
+
+printf '%s\n' 'Refreshing Arch package databases and applying official updates...'
+sudo pacman -Syu

@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui"
+wallpaper_file="$state_dir/wallpaper"
+palette_file="$state_dir/colors.json"
+wallpaper=${1:-}
+
+if [[ -z "$wallpaper" || "$wallpaper" == "--current" ]]; then
+  wallpaper=""
+  [[ -f "$wallpaper_file" ]] && wallpaper=$(<"$wallpaper_file")
+fi
+[[ -n "$wallpaper" && -f "$wallpaper" ]] || exit 0
+command -v matugen >/dev/null 2>&1 || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+
+mkdir -p "$state_dir"
+raw_file=$(mktemp "$state_dir/matugen.XXXXXX")
+next_file=$(mktemp "$state_dir/colors.XXXXXX")
+cleanup() { rm -f -- "$raw_file" "$next_file"; }
+trap cleanup EXIT
+
+matugen image "$wallpaper" -m dark -t scheme-tonal-spot --prefer saturation --json hex >"$raw_file"
+jq '
+  def hex: if type == "string" then . else (.default.color // .dark.color) end;
+  .colors | {
+    primary: (.primary | hex),
+    on_primary: (.on_primary | hex),
+    secondary: (.secondary | hex),
+    surface: (.surface | hex),
+    surface_variant: (.surface_variant | hex),
+    on_surface: (.on_surface | hex),
+    on_surface_variant: (.on_surface_variant | hex),
+    outline: (.outline | hex),
+    error: (.error | hex),
+    tertiary: (.tertiary | hex)
+  }
+' "$raw_file" >"$next_file"
+
+jq -e 'all(.[]; type == "string" and test("^#[0-9a-fA-F]{6}$"))' "$next_file" >/dev/null
+chmod 0644 "$next_file"
+mv -f -- "$next_file" "$palette_file"
+laptopui-apply-hypr-theme "$palette_file" >/dev/null 2>&1 || true

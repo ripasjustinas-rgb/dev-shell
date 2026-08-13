@@ -1,0 +1,8 @@
+# Desktop-specific packages. Select exactly one CPU profile backend after
+# inspecting the target host: power-profiles-daemon OR tuned+tuned-ppd OR cpupower.
+nvidia-open
+nvidia-utils
+egl-wayland
+xorg-xwayland
+pciutils
+power-profiles-daemon

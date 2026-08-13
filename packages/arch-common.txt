@@ -1,0 +1,38 @@
+# Core session and shell
+hyprland
+quickshell
+xdg-desktop-portal-hyprland
+pipewire
+pipewire-audio
+pipewire-alsa
+wireplumber
+libnotify
+networkmanager
+bluez
+upower
+polkit-kde-agent
+
+# UI capabilities
+brightnessctl
+playerctl
+wl-clipboard
+cliphist
+grim
+slurp
+hyprpaper
+hypridle
+hyprlock
+cava
+matugen
+jq
+# Typography and icons used by Quickshell
+qt6-imageformats
+qt6-svg
+ttf-jetbrains-mono-nerd
+noto-fonts-emoji
+pacman-contrib
+
+# Current fallback applications
+kitty
+dolphin
+waybar

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+runtime_dir=${XDG_RUNTIME_DIR:-/tmp}
+state_dir="$runtime_dir/laptopui-visualizer"
+out_file="$state_dir/spectrum.txt"
+
+laptopui-visualizer-daemon >/dev/null 2>&1 || true
+
+if [[ -f "$out_file" ]]; then
+  tail -n 1 "$out_file"
+else
+  printf '%s\n' '0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0'
+fi

@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+profile=$(powerprofilesctl get 2>/dev/null || printf 'unavailable')
+case "$profile" in
+  performance) text='PWR performance' ;;
+  balanced) text='PWR balanced' ;;
+  power-saver) text='PWR saver' ;;
+  *) text='PWR unavailable' ;;
+esac
+
+printf '{"text":"%s","tooltip":"Power profile: %s\\nClick to change","class":"%s"}\n' "$text" "$profile" "$profile"

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+runtime_dir=${XDG_RUNTIME_DIR:-/tmp}
+state_dir="$runtime_dir/laptopui-visualizer"
+pid_file="$state_dir/cava.pid"
+config_file="$state_dir/cava.conf"
+out_file="$state_dir/spectrum.txt"
+log_file="$state_dir/cava.log"
+mkdir -p "$state_dir"
+
+if [[ -f "$pid_file" ]]; then
+  old_pid=$(<"$pid_file")
+  if [[ "$old_pid" =~ ^[0-9]+$ ]] && kill -0 "$old_pid" 2>/dev/null; then
+    if tr '\0' ' ' <"/proc/$old_pid/cmdline" 2>/dev/null | grep -Fq "cava -p $config_file"; then
+      exit 0
+    fi
+  fi
+fi
+
+command -v cava >/dev/null 2>&1 || exit 0
+
+mkdir -p "$state_dir"
+touch "$out_file"
+printf '%s\n' \
+  '[general]' \
+  'bars = 32' \
+  'framerate = 60' \
+  'sensitivity = 130' \
+  'autosens = 1' \
+  'lower_cutoff_freq = 20' \
+  'higher_cutoff_freq = 20000' \
+  '' \
+  '[input]' \
+  'method = pipewire' \
+  'source = auto' \
+  '' \
+  '[output]' \
+  'method = raw' \
+  "raw_target = $out_file" \
+  'data_format = ascii' \
+  'channels = mono' \
+  'ascii_max_range = 16' \
+  'bar_delimiter = 59' \
+  'frame_delimiter = 10' >"$config_file"
+
+cava -p "$config_file" >>"$log_file" 2>&1 &
+printf '%s\n' "$!" >"$pid_file"

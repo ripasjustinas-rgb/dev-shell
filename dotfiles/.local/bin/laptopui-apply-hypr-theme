@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+palette_file=${1:-"${XDG_STATE_HOME:-$HOME/.local/state}/laptopui/colors.json"}
+[[ -f "$palette_file" ]] || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+command -v hyprctl >/dev/null 2>&1 || exit 0
+hyprctl monitors >/dev/null 2>&1 || exit 0
+
+primary=$(jq -r '.primary | ltrimstr("#")' "$palette_file")
+secondary=$(jq -r '.secondary | ltrimstr("#")' "$palette_file")
+surface=$(jq -r '.surface | ltrimstr("#")' "$palette_file")
+outline=$(jq -r '.outline | ltrimstr("#")' "$palette_file")
+
+for value in "$primary" "$secondary" "$surface" "$outline"; do
+  [[ "$value" =~ ^[0-9a-fA-F]{6}$ ]] || exit 1
+done
+
+lua_config=$(printf '%s\n' \
+  'hl.config({' \
+  '  general = { col = {' \
+  "    active_border = { colors = {\"rgba(${primary}ff)\", \"rgba(${secondary}ff)\"}, angle = 45 }," \
+  "    inactive_border = \"rgba(${outline}aa)\"," \
+  '  } },' \
+  '  decoration = { shadow = {' \
+  "    color = \"rgba(${surface}ea)\"," \
+  '  } },' \
+  '})')
+
+if ! hyprctl -r eval "$lua_config" >/dev/null 2>&1; then
+  hyprctl keyword general:col.active_border "rgba(${primary}ff) rgba(${secondary}ff) 45deg" >/dev/null 2>&1 || true
+  hyprctl keyword general:col.inactive_border "rgba(${outline}aa)" >/dev/null 2>&1 || true
+  hyprctl keyword decoration:shadow:color "rgba(${surface}ea)" >/dev/null 2>&1 || true
+fi

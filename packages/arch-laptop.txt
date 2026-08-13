@@ -1,0 +1,6 @@
+# Laptop-specific capabilities
+power-profiles-daemon
+brightnessctl
+# Intel SOF audio firmware and tools used to verify laptop sound devices.
+sof-firmware
+alsa-utils

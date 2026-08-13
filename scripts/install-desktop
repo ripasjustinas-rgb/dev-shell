@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
+profile_file="$repo_dir/profiles/desktop/profile.env"
+
+usage() {
+  printf '%s\n' \
+    'Usage: scripts/install-desktop <preflight|packages|dry-run|install|verify> [arguments]' \
+    '  preflight [--output FILE]  Collect read-only hardware/session inventory.' \
+    '  packages                   Install common and desktop Arch packages.' \
+    '  dry-run                    Preview every managed filesystem change.' \
+    '  install                    Install links after DESKTOP_PORT_READY=1.' \
+    '  verify                     Run repository check and desktop inventory.'
+}
+
+desktop_ready() {
+  grep -Eq '^DESKTOP_PORT_READY=1$' "$profile_file"
+}
+
+require_desktop_ready() {
+  desktop_ready || {
+    printf '%s\n' \
+      'error: desktop profile is not ready.' \
+      'Run preflight, configure modules/profiles/desktop.lua, verify performance,' \
+      'then set DESKTOP_PORT_READY=1 in profiles/desktop/profile.env.' >&2
+    exit 1
+  }
+}
+
+command=${1:-}
+[[ -n "$command" ]] || { usage; exit 2; }
+shift
+
+case "$command" in
+  preflight)
+    exec "$repo_dir/scripts/desktop-preflight" "$@"
+    ;;
+  packages)
+    [[ $# -eq 0 ]] || { usage; exit 2; }
+    exec "$repo_dir/install.sh" packages --profile desktop
+    ;;
+  dry-run)
+    [[ $# -eq 0 ]] || { usage; exit 2; }
+    exec "$repo_dir/install.sh" install --profile desktop --dry-run
+    ;;
+  install)
+    [[ $# -eq 0 ]] || { usage; exit 2; }
+    require_desktop_ready
+    exec "$repo_dir/install.sh" install --profile desktop
+    ;;
+  verify)
+    [[ $# -eq 0 ]] || { usage; exit 2; }
+    require_desktop_ready
+    "$repo_dir/install.sh" check --profile desktop
+    exec "$repo_dir/scripts/desktop-preflight"
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac

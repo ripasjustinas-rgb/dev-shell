@@ -1,0 +1,46 @@
+#!/usr/bin/env sh
+set -eu
+
+wallpaper_dir=${LAPTOPUI_WALLPAPER_DIR:-"${HOME}/Wallpapers"}
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui"
+state_file="$state_dir/wallpaper"
+
+[ -d "$wallpaper_dir" ] || exit 0
+
+current=$(cat "$state_file" 2>/dev/null || true)
+next=$(find "$wallpaper_dir" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) -print | sort | awk -v current="$current" '
+  $0 == current { found = 1; next }
+  found { print; printed = 1; exit }
+  { first = first ? first : $0 }
+  END { if (!found && first) print first; else if (found && !printed) print first }
+')
+
+[ -n "$next" ] || exit 0
+mkdir -p -- "$state_dir"
+printf '%s\n' "$next" > "$state_file"
+
+# Material You colors are generated into runtime state. ThemeLoader notices the
+# atomic palette replacement and updates Quickshell without a restart.
+laptopui-theme-generate "$next" >/dev/null 2>&1 || true
+
+# Quickshell's persistent background crossfades the state-file change. Keep
+# hyprpaper only as a fallback for a session where Quickshell is unavailable.
+pgrep -x qs >/dev/null 2>&1 && exit 0
+
+if ! pgrep -x hyprpaper >/dev/null 2>&1; then
+    hyprpaper >/dev/null 2>&1 &
+    # Wait for its IPC socket before sending the first wallpaper request.
+    tries=0
+    while ! hyprctl hyprpaper listactive >/dev/null 2>&1; do
+        tries=$((tries + 1))
+        [ "$tries" -lt 30 ] || exit 1
+        sleep 0.1
+    done
+fi
+# Hyprpaper 0.8 requires an explicit monitor name. An empty name used to mean
+# “all outputs”, but is now accepted as a no-op. Apply the image to every
+# active Hyprland monitor so the same helper works for laptop and desktop.
+hyprctl monitors | awk '/^Monitor / { print $2 }' | while IFS= read -r monitor; do
+    [ -n "$monitor" ] || continue
+    hyprctl hyprpaper wallpaper "$monitor,$next" >/dev/null
+done

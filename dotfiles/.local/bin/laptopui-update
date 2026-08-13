@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+set -eu
+
+script_path=$(readlink -f -- "$0")
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$script_path")/../../.." && pwd -P)
+exec kitty --title laptopui-update sh -lc "cd '$repo_dir' && ./scripts/update-system; printf '\\nPress Enter to close... '; read _"

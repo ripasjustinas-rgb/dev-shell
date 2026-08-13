@@ -1,0 +1,48 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 32,
+  "output": ["*"],
+  "modules-left": ["hyprland/workspaces"],
+  "modules-center": ["clock"],
+  "modules-right": ["pulseaudio", "network", "battery", "custom/power-profile", "custom/session", "tray"],
+  "hyprland/workspaces": {
+    "all-outputs": false,
+    "format": "{name}",
+    "on-click": "activate",
+    "persistent-workspaces": { "*": 5 }
+  },
+  "clock": {
+    "format": "{:%a, %d %b  %H:%M}",
+    "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+  },
+  "pulseaudio": {
+    "format": "VOL {volume}%",
+    "format-muted": "MUTED",
+    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+  },
+  "network": {
+    "format-wifi": "NET {signalStrength}%",
+    "format-ethernet": "NET wired",
+    "format-disconnected": "NET off",
+    "tooltip-format": "{ifname}: {ipaddr}"
+  },
+  "battery": {
+    "format": "BAT {capacity}%",
+    "format-charging": "CHG {capacity}%",
+    "format-full": "BAT full",
+    "states": { "warning": 30, "critical": 15 }
+  },
+  "custom/power-profile": {
+    "exec": "/home/justas/.local/bin/power-profile-status",
+    "return-type": "json",
+    "interval": 5,
+    "on-click": "/home/justas/.local/bin/power-profile-menu"
+  },
+  "custom/session": {
+    "format": "POWER",
+    "tooltip": false,
+    "on-click": "/home/justas/.local/bin/power-menu"
+  },
+  "tray": { "spacing": 8 }
+}

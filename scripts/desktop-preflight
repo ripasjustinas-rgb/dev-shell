@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+output_file=""
+if [[ ${1:-} == --output ]]; then
+  [[ -n ${2:-} ]] || { printf 'error: --output requires a file\n' >&2; exit 2; }
+  output_file=$2
+  shift 2
+fi
+[[ $# -eq 0 ]] || { printf 'Usage: scripts/desktop-preflight [--output FILE]\n' >&2; exit 2; }
+
+if [[ -n "$output_file" ]]; then
+  mkdir -p -- "$(dirname -- "$output_file")"
+  exec > >(tee "$output_file") 2>&1
+fi
+
+issues=0
+warn() { printf -- '- WARN: %s\n' "$*"; issues=$((issues + 1)); }
+value() { printf -- '- %s: `%s`\n' "$1" "${2:-unavailable}"; }
+command_value() {
+  local label=$1
+  shift
+  local result
+  result=$("$@" 2>/dev/null | head -n 1 || true)
+  value "$label" "${result:-unavailable}"
+}
+sysfs_value() {
+  local path=$1
+  if [[ -r "$path" ]]; then
+    sed -n '1p' "$path"
+  else
+    printf 'unavailable\n'
+  fi
+}
+
+printf '# laptopui desktop preflight\n\n'
+value 'Generated' "$(date --iso-8601=seconds)"
+value 'Host' "$(hostnamectl hostname 2>/dev/null || hostname)"
+value 'Kernel' "$(uname -srmo)"
+if [[ -r /etc/os-release ]]; then
+  # shellcheck disable=SC1091
+  source /etc/os-release
+  value 'Operating system' "${PRETTY_NAME:-unknown}"
+fi
+[[ -f /etc/arch-release ]] || warn 'This installer is designed for Arch Linux.'
+
+printf '\n## CPU and power policy\n\n'
+cpu_model=$(lscpu 2>/dev/null | awk -F: '/^Model name:/ { sub(/^[[:space:]]+/, "", $2); print $2; exit }')
+value 'CPU' "$cpu_model"
+repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
+# shellcheck disable=SC1091
+source "$repo_dir/profiles/desktop/profile.env"
+[[ "$cpu_model" == *"${EXPECTED_CPU_SUBSTRING:-i7-8700}"* ]] || warn "CPU does not match expected desktop target: ${EXPECTED_CPU_SUBSTRING:-i7-8700}."
+
+cpufreq_dir=/sys/devices/system/cpu/cpu0/cpufreq
+if [[ ! -d "$cpufreq_dir" ]]; then
+  for candidate in /sys/devices/system/cpu/cpufreq/policy*; do
+    [[ -d "$candidate" ]] || continue
+    cpufreq_dir=$candidate
+    break
+  done
+fi
+value 'CPU policy path' "$cpufreq_dir"
+value 'Scaling driver' "$(sysfs_value "$cpufreq_dir/scaling_driver")"
+value 'Current governor' "$(sysfs_value "$cpufreq_dir/scaling_governor")"
+value 'Available governors' "$(sysfs_value "$cpufreq_dir/scaling_available_governors")"
+value 'Current EPP' "$(sysfs_value "$cpufreq_dir/energy_performance_preference")"
+value 'Available EPP' "$(sysfs_value "$cpufreq_dir/energy_performance_available_preferences")"
+
+if command -v powerprofilesctl >/dev/null 2>&1; then
+  value 'Active power profile' "$(powerprofilesctl get 2>/dev/null || true)"
+  printf '\n```text\n'
+  powerprofilesctl list 2>&1 || true
+  printf '```\n'
+  powerprofilesctl list 2>/dev/null | grep -q 'performance:' || warn 'powerprofilesctl does not expose a performance profile.'
+else
+  warn 'powerprofilesctl is not installed.'
+fi
+
+ppd_state=$(systemctl is-active power-profiles-daemon.service 2>/dev/null || true)
+tuned_state=$(systemctl is-active tuned.service 2>/dev/null || true)
+value 'power-profiles-daemon' "$ppd_state"
+value 'tuned' "$tuned_state"
+if [[ "$ppd_state" == active && "$tuned_state" == active ]]; then
+  warn 'power-profiles-daemon and tuned are both active; select only one backend.'
+fi
+
+printf '\n## GPU and NVIDIA\n\n'
+if command -v lspci >/dev/null 2>&1; then
+  printf '```text\n'
+  lspci -nnk | awk '
+    /VGA compatible controller|3D controller|Display controller/ { remaining=4 }
+    remaining > 0 { print; remaining-- }
+  '
+  printf '```\n'
+else
+  warn 'lspci is unavailable; install pciutils and repeat the inventory.'
+fi
+command_value 'NVIDIA driver' nvidia-smi --query-gpu=driver_version --format=csv,noheader
+command_value 'NVIDIA GPU' nvidia-smi --query-gpu=name --format=csv,noheader
+nvidia_gpu=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -n 1 || true)
+[[ "$nvidia_gpu" == *"${EXPECTED_GPU_SUBSTRING:-RTX 2080 Ti}"* ]] || warn "GPU does not match expected desktop target: ${EXPECTED_GPU_SUBSTRING:-RTX 2080 Ti}."
+value 'nvidia_drm modeset' "$(sysfs_value /sys/module/nvidia_drm/parameters/modeset)"
+[[ -r /sys/module/nvidia_drm/parameters/modeset ]] || warn 'nvidia_drm is not loaded.'
+if [[ -r /sys/module/nvidia_drm/parameters/modeset && "$(sysfs_value /sys/module/nvidia_drm/parameters/modeset)" != Y ]]; then
+  warn 'nvidia_drm modeset must report Y before the Hyprland port is accepted.'
+fi
+
+printf '\n## Displays\n\n'
+if command -v hyprctl >/dev/null 2>&1 && hyprctl monitors -j >/dev/null 2>&1; then
+  if command -v jq >/dev/null 2>&1; then
+    printf '| Output | Mode | Position | Scale | Description |\n'
+    printf '|---|---:|---:|---:|---|\n'
+    hyprctl monitors -j | jq -r '.[] | "| \(.name) | \(.width)x\(.height)@\(.refreshRate | floor) | \(.x)x\(.y) | \(.scale) | \(.description) |"'
+  else
+    hyprctl monitors
+  fi
+else
+  warn 'No running Hyprland session; connected DRM outputs are listed instead.'
+  for connector in /sys/class/drm/card*-*; do
+    [[ -e "$connector/status" ]] || continue
+    value "$(basename "$connector")" "$(< "$connector/status")"
+  done
+fi
+
+printf '\n## Session and services\n\n'
+value 'Session type' "${XDG_SESSION_TYPE:-unset}"
+value 'Desktop' "${XDG_CURRENT_DESKTOP:-unset}"
+for unit in NetworkManager.service bluetooth.service; do
+  value "$unit" "$(systemctl is-active "$unit" 2>/dev/null || true)"
+done
+for unit in pipewire.service wireplumber.service xdg-desktop-portal-hyprland.service; do
+  value "$unit (user)" "$(systemctl --user is-active "$unit" 2>/dev/null || true)"
+done
+
+printf '\n## Required packages\n\n'
+missing=0
+declare -A seen=()
+for manifest in "$repo_dir/packages/arch-common.txt" "$repo_dir/packages/arch-desktop.txt"; do
+  while IFS= read -r package || [[ -n "$package" ]]; do
+    [[ -z "$package" || "$package" == \#* || -n "${seen[$package]:-}" ]] && continue
+    seen[$package]=1
+    if pacman -Q "$package" >/dev/null 2>&1; then
+      printf -- '- [x] %s\n' "$package"
+    else
+      printf -- '- [ ] %s\n' "$package"
+      missing=$((missing + 1))
+    fi
+  done < "$manifest"
+done
+(( missing == 0 )) || warn "$missing required package(s) are missing."
+
+printf '\n## Result\n\n'
+if (( issues == 0 )); then
+  printf 'PASS: no blocking prerequisite problems detected. Review monitor geometry before setting `DESKTOP_PORT_READY=1`.\n'
+else
+  printf 'REVIEW: %d warning(s) require attention before the desktop profile is marked ready.\n' "$issues"
+fi
+
+# Warnings describe inventory gaps and deliberately produce a non-zero result
+# so CI or the setup wrapper cannot accidentally treat an incomplete port as ready.
+(( issues == 0 ))
