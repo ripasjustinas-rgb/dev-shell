@@ -20,6 +20,8 @@ energijos profilio valdiklį. Centrinis datos ir vietos blokas papildytas didele
 Nerd Font orų ikona kairėje, kuri skiria dieną, naktį, debesis, rūką,
 kritulius, audrą ir stiprų vėją. Grojant media, kairysis vizualizatorius
 persikelia prieš orų ikoną, o visa weather/clock/media grupė centruojama kartu.
+Stiprūs žemų dažnių transientai paleidžia dvigubą max-rice bangą per centrinį
+bloką ir trumpą visualizerio taškų burst efektą.
 Vizualinis pagrindas naudoja iš
 `NerdMini_shell` pritaikytą „high rice“ stiklo, glow ir animacijų stilių, o
 `matugen` kiekvienam wallpaper'iui sukuria bendrą Quickshell, Hyprland ir Kitty

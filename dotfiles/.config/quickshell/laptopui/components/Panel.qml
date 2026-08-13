@@ -12,7 +12,32 @@ Item {
     property var activeMediaPlayer: null
     property var spectrumData: []
     property real bassLevel: 0
+    property real bassBaseline: 0
+    property int beatCooldownFrames: 0
+    property real beatBurst: 0
+    property real beatWave: 1
+    property real beatWaveEcho: 1
     property real shimmerPhase: 0
+
+    function triggerBeatWave() {
+        beatBurst = 1
+        beatBurstDecay.restart()
+        primaryBeatWave.restart()
+        echoBeatWave.restart()
+    }
+
+    function consumeBass(nextBass) {
+        const rise = nextBass - bassBaseline
+        const onsetThreshold = Math.max(0.03, bassBaseline * 0.38)
+        if (beatCooldownFrames > 0) beatCooldownFrames -= 1
+        if (beatCooldownFrames === 0 && nextBass >= 0.09
+                && (rise >= onsetThreshold || nextBass >= 0.82)) {
+            beatCooldownFrames = 6
+            triggerBeatWave()
+        }
+        bassLevel = nextBass
+        bassBaseline = bassBaseline * 0.72 + nextBass * 0.28
+    }
 
     function playerPriority(player) {
         if (!player) return 0
@@ -57,7 +82,10 @@ Item {
             property Connections playerConnections: Connections {
                 target: player
                 function onPlaybackStateChanged() { root.refreshActivePlayer() }
-                function onTrackChanged() { root.refreshActivePlayer() }
+                function onTrackChanged() {
+                    root.refreshActivePlayer()
+                    if (player === root.activeMediaPlayer) root.triggerBeatWave()
+                }
                 function onIdentityChanged() { root.refreshActivePlayer() }
             }
         }
@@ -77,8 +105,41 @@ Item {
                 let bass = 0
                 const count = Math.min(4, root.spectrumData.length)
                 for (let index = 0; index < count; ++index) bass += root.spectrumData[index]
-                root.bassLevel = count ? bass / count / 16 : 0
+                root.consumeBass(count ? bass / count / 16 : 0)
             }
+        }
+    }
+
+    NumberAnimation {
+        id: primaryBeatWave
+        target: root
+        property: "beatWave"
+        from: 0
+        to: 1
+        duration: 520
+        easing.type: Easing.OutCubic
+    }
+
+    SequentialAnimation {
+        id: echoBeatWave
+        PauseAnimation { duration: 85 }
+        NumberAnimation {
+            target: root
+            property: "beatWaveEcho"
+            from: 0
+            to: 1
+            duration: 560
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Timer {
+        id: beatBurstDecay
+        interval: 32
+        repeat: true
+        onTriggered: {
+            root.beatBurst = Math.max(0, root.beatBurst - 0.075)
+            if (root.beatBurst <= 0) stop()
         }
     }
 
@@ -139,7 +200,50 @@ Item {
                     SystemGroup {}
                 }
 
+                Rectangle {
+                    anchors.centerIn: centerCluster
+                    width: centerCluster.width + 18 + root.bassLevel * 12
+                    height: Math.min(glassPanel.height - 6, centerCluster.height + 4)
+                    radius: Theme.radiusLarge
+                    color: Theme.glow
+                    border.width: 1
+                    border.color: Theme.accent
+                    opacity: root.activeMediaPlayer !== null
+                        ? 0.035 + root.bassLevel * 0.24 + root.beatBurst * 0.12 : 0
+                    z: 1
+
+                    Behavior on width { NumberAnimation { duration: 80; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: 85; easing.type: Easing.OutCubic } }
+                }
+
+                Rectangle {
+                    anchors.centerIn: centerCluster
+                    width: centerCluster.width + 18 + root.beatWave * 150
+                    height: Math.min(glassPanel.height - 5, centerCluster.height + 5)
+                    radius: Theme.radiusLarge
+                    color: "transparent"
+                    border.width: 1
+                    border.color: Theme.accent
+                    opacity: root.activeMediaPlayer !== null
+                        ? Math.pow(1 - root.beatWave, 1.6) * 0.72 : 0
+                    z: 2
+                }
+
+                Rectangle {
+                    anchors.centerIn: centerCluster
+                    width: centerCluster.width + 24 + root.beatWaveEcho * 190
+                    height: Math.min(glassPanel.height - 7, centerCluster.height + 3)
+                    radius: Theme.radiusLarge
+                    color: "transparent"
+                    border.width: 1
+                    border.color: Theme.secondary
+                    opacity: root.activeMediaPlayer !== null
+                        ? Math.pow(1 - root.beatWaveEcho, 1.8) * 0.46 : 0
+                    z: 2
+                }
+
                 RowLayout {
+                    id: centerCluster
                     z: 3
                     anchors.centerIn: parent
                     spacing: 7
@@ -148,6 +252,7 @@ Item {
                         active: root.activeMediaPlayer !== null
                         mirrored: true
                         spectrumData: root.spectrumData
+                        burstLevel: root.beatBurst
                     }
 
                     ClockWeather {}
@@ -157,6 +262,7 @@ Item {
                     MediaVisualizerWing {
                         active: root.activeMediaPlayer !== null
                         spectrumData: root.spectrumData
+                        burstLevel: root.beatBurst
                     }
                 }
 

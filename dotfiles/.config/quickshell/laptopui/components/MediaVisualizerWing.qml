@@ -6,6 +6,7 @@ Item {
     property bool active: false
     property bool mirrored: false
     property var spectrumData: []
+    property real burstLevel: 0
     property real phase: 0
     property int laneCount: 5
     property int dotSize: 3
@@ -64,18 +65,30 @@ Item {
                             height: root.dotSize
                             radius: width / 2
                             color: Theme.secondary
-                            opacity: 0.18 + trail * 0.78
+                            opacity: Math.min(1, 0.18 + trail * 0.78 + root.burstLevel * 0.18)
                             Rectangle {
                                 anchors.centerIn: parent
-                                width: parent.width + 5
-                                height: parent.height + 5
+                                width: parent.width + 5 + root.burstLevel * 4
+                                height: parent.height + 5 + root.burstLevel * 4
                                 radius: width / 2
                                 color: Theme.accent
-                                opacity: parent.opacity * 0.2
+                                opacity: parent.opacity * (0.2 + root.burstLevel * 0.2)
                                 z: -1
                             }
                         }
                     }
+                }
+
+                Rectangle {
+                    visible: root.burstLevel > 0.12 && laneItem.level > 0.45
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: root.mirrored ? parent.left : undefined
+                    anchors.right: root.mirrored ? undefined : parent.right
+                    width: root.dotSize + 2
+                    height: width
+                    radius: width / 2
+                    color: Theme.text
+                    opacity: Math.min(1, 0.35 + root.burstLevel * 0.75)
                 }
             }
         }

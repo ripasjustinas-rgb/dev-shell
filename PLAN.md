@@ -102,6 +102,8 @@ SystemTray ir Notifications API. Trumpi išoriniai procesai (`brightnessctl`,
   dienos/nakties bei pagrindinių oro sąlygų būsenomis;
 - viena centruojama weather/clock/media grupė, kurios kairysis vizualizatorius
   rodomas prieš orų ikoną;
+- iš seno max-rice atkurta adaptyvi bass transientų detekcija, dviguba per
+  centrinį bloką nubėganti banga ir visualizerio peak burst efektas;
 - clipboard istorijos perkėlimas sąmoningai atidėtas vėlesniam etapui.
 
 ## Laptopo ir desktopo profiliai
