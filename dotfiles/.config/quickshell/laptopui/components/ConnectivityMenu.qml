@@ -32,7 +32,7 @@ PopupWindow {
             id: layout
             anchors.fill: parent; anchors.margins: 12; spacing: 9
             Item { visible: Capabilities.hasWifi
-                Layout.fillWidth: true; Layout.preferredWidth: 0; Layout.preferredHeight: wifiSection.implicitHeight
+                Layout.fillWidth: true; Layout.preferredWidth: 0; Layout.preferredHeight: wifiSection.implicitHeight; Layout.alignment: Qt.AlignTop
                 ColumnLayout { id: wifiSection; anchors.left: parent.left; anchors.right: parent.right; spacing: 7
                     RowLayout { Layout.fillWidth: true
                         Text { text: "Wi-Fi"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
@@ -54,20 +54,17 @@ PopupWindow {
             }
             Rectangle { visible: Capabilities.hasWifi && Capabilities.hasBluetooth; Layout.fillHeight: true; width: 1; color: Theme.surfaceHover }
             Item { visible: Capabilities.hasBluetooth
-                Layout.fillWidth: true; Layout.preferredWidth: 0; Layout.preferredHeight: bluetoothSection.implicitHeight
+                Layout.fillWidth: true; Layout.preferredWidth: 0; Layout.preferredHeight: bluetoothSection.implicitHeight; Layout.alignment: Qt.AlignTop
                 ColumnLayout { id: bluetoothSection; anchors.left: parent.left; anchors.right: parent.right; spacing: 7
                     RowLayout { Layout.fillWidth: true
                         Text { text: "Bluetooth"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
                         Item { Layout.fillWidth: true }
-                        Rectangle { visible: BluetoothState.available; width: 42; height: 22; radius: height / 2; color: BluetoothState.enabled ? Theme.accent : Theme.elevated
+                        Text { visible: !BluetoothState.available; text: "Inactive"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 }
+                        Rectangle { width: 42; height: 22; radius: height / 2; color: BluetoothState.enabled ? Theme.accent : Theme.elevated
                             Rectangle { width: 16; height: 16; radius: width / 2; anchors.verticalCenter: parent.verticalCenter; x: BluetoothState.enabled ? parent.width - width - 3 : 3; color: BluetoothState.enabled ? Theme.accentText : Theme.muted
                                 Behavior on x { NumberAnimation { duration: Theme.animationFast } }
                             }
-                            MouseArea { anchors.fill: parent; onClicked: BluetoothState.run("power", BluetoothState.enabled ? "off" : "on") }
-                        }
-                        Rectangle { visible: !BluetoothState.available; width: 58; height: 22; radius: 11; color: Theme.elevated
-                            Text { anchors.centerIn: parent; text: "Enable"; color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: 10 }
-                            MouseArea { anchors.fill: parent; onClicked: BluetoothState.activateService() }
+                            MouseArea { anchors.fill: parent; onClicked: { if (BluetoothState.available) BluetoothState.run("power", BluetoothState.enabled ? "off" : "on"); else BluetoothState.activateService() } }
                         }
                         Text { visible: BluetoothState.enabled; text: BluetoothState.scanning ? "Stop" : "Scan"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: BluetoothState.scan() } }
                     }
