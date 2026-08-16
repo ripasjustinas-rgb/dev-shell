@@ -3,7 +3,7 @@ pragma Singleton
 import Quickshell.Hyprland
 import QtQuick
 
-QtObject {
+Item {
     // Hyprland's live object model updates on compositor events, so overview
     // and workspace UI never need a hyprctl polling loop.
     readonly property var workspaces: Hyprland.workspaces

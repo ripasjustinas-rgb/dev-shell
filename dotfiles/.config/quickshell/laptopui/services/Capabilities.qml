@@ -5,7 +5,7 @@ import Quickshell.Io
 import Quickshell.Networking
 import QtQuick
 
-QtObject {
+Item {
     id: root
 
     // These values deliberately describe what this host can do, rather than

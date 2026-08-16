@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-QtObject {
+Item {
     id: root
     property bool dnd: false
     property bool calmMode: false

@@ -5,7 +5,7 @@ import Quickshell.Io
 import QtQuick
 import qs.services
 
-QtObject {
+Item {
     id: root
     property bool available: Capabilities.hasBluetooth
     property bool enabled: false
