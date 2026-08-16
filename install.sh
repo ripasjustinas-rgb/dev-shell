@@ -183,6 +183,9 @@ packages() {
   local -a packages_to_install=()
   mapfile -t packages_to_install < <(emit_package_list)
   run sudo pacman --needed -S "${packages_to_install[@]}"
+  # BlueZ is a system service. Enable it while packages are provisioned so
+  # the shell's Bluetooth toggle only changes adapter state and never prompts.
+  run sudo systemctl enable --now bluetooth.service
 }
 
 refresh_clipboard_watcher() {
