@@ -12,6 +12,10 @@ Pilna prerequisites ir saugaus perkėlimo eiga aprašyta
 [docs/PREREQUISITES.md](docs/PREREQUISITES.md) bei
 [docs/DESKTOP_PORT.md](docs/DESKTOP_PORT.md).
 
+`SUPER+TAB` live workspace preview, paieškos ir penkių workspace'ų vienoje
+eilėje diegimas kitame desktop'e aprašytas
+[docs/HYPREXPOSE.md](docs/HYPREXPOSE.md).
+
 SDDM login ekranui paruošta atskirai previewinama ir atkuriama LaptopUI tema.
 Jos saugi diegimo eiga aprašyta [docs/SDDM.md](docs/SDDM.md); tema nėra
 aktyvuojama kartu su įprastu dotfiles diegimu.

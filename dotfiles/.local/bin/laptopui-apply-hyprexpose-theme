@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+palette_file=${1:-"${XDG_STATE_HOME:-$HOME/.local/state}/laptopui/colors.json"}
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/hyprexpose"
+config_file="$config_dir/config.toml"
+
+[[ -f "$palette_file" ]]
+command -v jq >/dev/null 2>&1
+
+primary=$(jq -r '.primary | ltrimstr("#")' "$palette_file")
+secondary=$(jq -r '.secondary | ltrimstr("#")' "$palette_file")
+surface=$(jq -r '.surface | ltrimstr("#")' "$palette_file")
+surface_variant=$(jq -r '.surface_variant | ltrimstr("#")' "$palette_file")
+on_surface=$(jq -r '.on_surface | ltrimstr("#")' "$palette_file")
+outline=$(jq -r '.outline | ltrimstr("#")' "$palette_file")
+tertiary=$(jq -r '.tertiary | ltrimstr("#")' "$palette_file")
+
+for value in "$primary" "$secondary" "$surface" "$surface_variant" "$on_surface" "$outline" "$tertiary"; do
+    [[ "$value" =~ ^[0-9a-fA-F]{6}$ ]] || exit 1
+done
+
+mkdir -p "$config_dir"
+next_file=$(mktemp "$config_dir/config.XXXXXX")
+cleanup() { rm -f -- "$next_file"; }
+trap cleanup EXIT
+
+cat >"$next_file" <<EOF
+# Generated from the active matugen palette. Do not edit by hand.
+[appearance]
+font = "JetBrainsMono Nerd Font 10"
+label_font = "JetBrainsMono Nerd Font Bold 12"
+card_padding = 18.0
+card_radius = 20.0
+max_card_width = 350.0
+max_card_height = 300.0
+label_height = 34.0
+thumb_padding = 9.0
+select_border = 3.0
+workspace_columns = 5
+workspace_count = 5
+
+[colors]
+background = "#${surface}dc"
+card = "#${surface_variant}f2"
+selection = "#${primary}ff"
+label = "#${on_surface}ff"
+empty_label = "#${outline}b3"
+window_label = "#${on_surface}f2"
+active_window = "#${tertiary}ff"
+
+[behavior]
+no_preview = false
+switch_on_move = true
+allow_mouse = true
+EOF
+
+chmod 0644 "$next_file"
+mv -f -- "$next_file" "$config_file"
+trap - EXIT
+
+# hyprexpose reads its TOML only at startup. Restarting the hidden daemon is
+# imperceptible and applies the new palette before the next Super+Tab.
+systemctl --user restart hyprexpose.service >/dev/null 2>&1 || true

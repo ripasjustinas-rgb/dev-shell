@@ -1,0 +1,13 @@
+[Unit]
+Description=Hyprland live workspace overview
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/laptopui-hyprexpose --allow-mouse
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

@@ -2,3 +2,5 @@
 .DS_Store
 *.swp
 reports/
+# Local build tree; the reproducible source change lives in patches/.
+vendor/hyprexpose/

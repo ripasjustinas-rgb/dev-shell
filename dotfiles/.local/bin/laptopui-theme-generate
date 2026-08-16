@@ -88,6 +88,8 @@ mv -f -- "$next_file" "$palette_file"
 mv -f -- "$kitty_next_file" "$kitty_palette_file"
 "$helper_dir/laptopui-apply-hypr-theme" "$palette_file" \
   >/dev/null 2>>"$theme_error_log" || true
+"$helper_dir/laptopui-apply-hyprexpose-theme" "$palette_file" \
+  >/dev/null 2>>"$theme_error_log" || true
 if pgrep -x kitty >/dev/null 2>&1; then
   pkill -USR1 -x kitty >/dev/null 2>&1 || true
 fi

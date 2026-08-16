@@ -8,7 +8,9 @@ hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("qs -c laptopui ipc call laptopui toggleCommandPalette"))
 hl.bind(mainMod .. " + A", hl.dsp.exec_cmd("qs -c laptopui ipc call laptopui toggleControlCenter"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("qs -c laptopui ipc call laptopui toggleNotifications"))
-hl.bind(mainMod .. " + TAB", hl.dsp.exec_cmd("qs -c laptopui ipc call laptopui toggleOverview"))
+-- hyprexpose owns the live Hyprland window thumbnails. It is a persistent
+-- user service; Super+Tab only toggles its zero-idle-cost overlay.
+hl.bind(mainMod .. " + TAB", hl.dsp.exec_cmd("pkill -SIGUSR1 -x laptopui-hyprex"))
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("$HOME/.local/bin/laptopui-lock"))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))

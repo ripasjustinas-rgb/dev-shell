@@ -1,0 +1,31 @@
+# laptopui visual language for hyprexpose's native live-window overview.
+
+[appearance]
+font = "JetBrainsMono Nerd Font 10"
+label_font = "JetBrainsMono Nerd Font Bold 12"
+
+# Five 350px cards and their gutters fit across the 1920px laptop display.
+card_padding = 18.0
+card_radius = 20.0
+max_card_width = 350.0
+max_card_height = 300.0
+label_height = 34.0
+thumb_padding = 9.0
+select_border = 3.0
+workspace_columns = 5
+workspace_count = 5
+
+[colors]
+# Theme tokens match qs.theme.Theme: deep plum glass with lavender focus.
+background = "#100d12dc"
+card = "#221e24f2"
+selection = "#dabaf9ff"
+label = "#e8e0e8ff"
+empty_label = "#ccc4cfb3"
+window_label = "#e8e0e8f2"
+active_window = "#b8f2c8ff"
+
+[behavior]
+no_preview = false
+switch_on_move = true
+allow_mouse = true

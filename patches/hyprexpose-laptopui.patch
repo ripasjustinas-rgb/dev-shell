@@ -1,0 +1,270 @@
+diff --git a/README.md b/README.md
+index 4c81e53..2b529d7 100644
+--- a/README.md
++++ b/README.md
+@@ -19,2 +19,2 @@ Lightweight workspace overview for [Hyprland](https://hyprland.org) and [Sway](h
+-- Keyboard navigation (arrow keys / hjkl)
+-- Move the active window to another workspace with `m`
++- Keyboard navigation with arrow keys
++- Move the active window to another workspace with a right click
+@@ -101 +101,4 @@ yay -S hyprexpose-git
+-| Arrow keys / hjkl | Navigate workspaces |
++| Type | Filter workspaces by application class or window title |
++| Backspace | Remove one search character |
++| Escape | Clear search / close overview |
++| Arrow keys | Navigate workspaces |
+@@ -103 +106 @@ yay -S hyprexpose-git
+-| `m` | Move active window to selected workspace |
++| Right click | Move active window to selected workspace |
+diff --git a/config.example.toml b/config.example.toml
+index 7a94ae0..6e9eabc 100644
+--- a/config.example.toml
++++ b/config.example.toml
+@@ -34,0 +35,4 @@ select_border = 3.0
++# Set both to 5 for a fixed five-workspace horizontal overview.
++workspace_columns = 0
++workspace_count = 0
++
+diff --git a/src/config.rs b/src/config.rs
+index 00c465a..ccf6e84 100644
+--- a/src/config.rs
++++ b/src/config.rs
+@@ -75,0 +76,4 @@ pub struct AppearanceConfig {
++    /// Number of workspace cards per row. Zero keeps the automatic grid.
++    pub workspace_columns: usize,
++    /// Keep the first N numeric workspaces visible, even when empty.
++    pub workspace_count: usize,
+@@ -89,0 +94,2 @@ impl Default for AppearanceConfig {
++            workspace_columns: 0,
++            workspace_count: 0,
+@@ -109 +115 @@ pub struct ColorsConfig {
+-    /// Border drawn around the active window thumbnail (the one 'm' will move).
++    /// Border drawn around the active window thumbnail.
+@@ -132 +138 @@ pub struct BehaviorConfig {
+-    /// After moving a window with 'm', also switch to the destination workspace.
++    /// After moving a window with the mouse, also switch to the destination workspace.
+diff --git a/src/main.rs b/src/main.rs
+index 3a5bc50..ce6f07d 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -65,0 +66 @@ const XKB_KEY_ESCAPE: u32 = 0xff1b;
++const XKB_KEY_BACKSPACE: u32 = 0xff08;
+@@ -75,0 +77,2 @@ const XKB_KEY_M: u32 = 0x006d;
++const XKB_KEY_A: u32 = 0x0061;
++const XKB_KEY_Z: u32 = 0x007a;
+@@ -89,0 +93 @@ fn keycode_to_keysym(keycode: u32) -> u32 {
++        14  => XKB_KEY_BACKSPACE,
+@@ -94,0 +99,15 @@ fn keycode_to_keysym(keycode: u32) -> u32 {
++        16  => 0x0071, // q
++        17  => 0x0077, // w
++        18  => 0x0065, // e
++        19  => 0x0072, // r
++        20  => 0x0074, // t
++        21  => 0x0079, // y
++        22  => 0x0075, // u
++        23  => 0x0069, // i
++        24  => 0x006f, // o
++        25  => 0x0070, // p
++        30  => 0x0061, // a
++        31  => 0x0073, // s
++        32  => 0x0064, // d
++        33  => 0x0066, // f
++        34  => 0x0067, // g
+@@ -98,0 +118,6 @@ fn keycode_to_keysym(keycode: u32) -> u32 {
++        44  => 0x007a, // z
++        45  => 0x0078, // x
++        46  => 0x0063, // c
++        47  => 0x0076, // v
++        48  => 0x0062, // b
++        49  => 0x006e, // n
+@@ -99,0 +125 @@ fn keycode_to_keysym(keycode: u32) -> u32 {
++        57  => 0x0020, // space
+@@ -149,0 +176 @@ struct AppState {
++    all_workspaces: Vec<WorkspaceInfo>,
+@@ -154,0 +182 @@ struct AppState {
++    search_query: String,
+@@ -188,0 +217 @@ impl AppState {
++            all_workspaces: Vec::new(),
+@@ -191,0 +221 @@ impl AppState {
++            search_query: String::new(),
+@@ -203,0 +234,26 @@ impl AppState {
++        if keysym == XKB_KEY_ESCAPE {
++            if self.search_query.is_empty() {
++                return true;
++            }
++            self.search_query.clear();
++            self.apply_search();
++            return false;
++        }
++        if keysym == XKB_KEY_BACKSPACE {
++            if self.search_query.pop().is_some() {
++                self.apply_search();
++            }
++            return false;
++        }
++        if (XKB_KEY_A..=XKB_KEY_Z).contains(&keysym) || keysym == 0x0020 {
++            let ch = char::from_u32(keysym).unwrap_or_default();
++            self.search_query.push(ch);
++            self.apply_search();
++            return false;
++        }
++        if (XKB_KEY_1..=XKB_KEY_9).contains(&keysym) && !self.search_query.is_empty() {
++            self.search_query.push(char::from_u32(keysym).unwrap_or_default());
++            self.apply_search();
++            return false;
++        }
++
+@@ -206 +262 @@ impl AppState {
+-            return true;
++            return false;
+@@ -208 +264 @@ impl AppState {
+-        let cols = ((n as f64).sqrt().ceil() as usize).max(1);
++        let cols = render::grid_columns(n, &self.config);
+@@ -211 +266,0 @@ impl AppState {
+-            XKB_KEY_ESCAPE => return true,
+@@ -247,5 +301,0 @@ impl AppState {
+-            XKB_KEY_M => {
+-                if self.move_active_window_to_selected() {
+-                    return true;
+-                }
+-            }
+@@ -256,0 +307,26 @@ impl AppState {
++    fn apply_search(&mut self) {
++        let needle = self.search_query.trim().to_ascii_lowercase();
++        self.workspaces = if needle.is_empty() {
++            self.all_workspaces.clone()
++        } else {
++            self.all_workspaces.iter().filter_map(|workspace| {
++                let clients: Vec<_> = workspace.clients.iter().filter(|client| {
++                    client.class_name.to_ascii_lowercase().contains(&needle)
++                        || client.title.to_ascii_lowercase().contains(&needle)
++                }).cloned().collect();
++                (!clients.is_empty()).then(|| WorkspaceInfo {
++                    id: workspace.id,
++                    name: workspace.name.clone(),
++                    monitor_id: workspace.monitor_id,
++                    clients,
++                })
++            }).collect()
++        };
++        self.selected = 0;
++        self.scene = None;
++        if let Some(slab) = self.slab.as_mut() {
++            slab.shown = [None; 2];
++        }
++        self.needs_redraw = true;
++    }
++
+@@ -283 +359 @@ impl AppState {
+-        let cols = ((n as f64).sqrt().ceil() as usize).max(1);
++        let cols = render::grid_columns(n, &self.config);
+@@ -285,0 +362 @@ impl AppState {
++        let search_h = 44.0;
+@@ -289 +366 @@ impl AppState {
+-        let card_h = ((self.height as f64 - pad * (rows + 1) as f64) / rows as f64)
++        let card_h = ((self.height as f64 - search_h - pad * (rows + 1) as f64) / rows as f64)
+@@ -295 +372 @@ impl AppState {
+-        let oy = (self.height as f64 - grid_h) / 2.0;
++        let oy = search_h + (self.height as f64 - search_h - grid_h) / 2.0;
+@@ -563,0 +641 @@ fn hide(state: &mut AppState) {
++    state.all_workspaces.clear();
+@@ -565,0 +644 @@ fn hide(state: &mut AppState) {
++    state.search_query.clear();
+@@ -691,0 +771 @@ fn redraw(state: &mut AppState, qh: &QueueHandle<AppState>) {
++            &state.search_query,
+@@ -906 +986,15 @@ fn refresh_data(
+-    state.workspaces = ipc::get_workspaces();
++    state.all_workspaces = ipc::get_workspaces();
++    if state.config.appearance.workspace_count > 0 {
++        for id in 1..=state.config.appearance.workspace_count as i32 {
++            if !state.all_workspaces.iter().any(|workspace| workspace.id == id) {
++                state.all_workspaces.push(WorkspaceInfo {
++                    id,
++                    name: id.to_string(),
++                    monitor_id: 0,
++                    clients: Vec::new(),
++                });
++            }
++        }
++        state.all_workspaces.sort_by_key(|workspace| workspace.id);
++    }
++    state.workspaces = state.all_workspaces.clone();
+diff --git a/src/render.rs b/src/render.rs
+index 18fd80b..c35fa0d 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -51,0 +52,10 @@ fn rounded_rect(cr: &Context, x: f64, y: f64, w: f64, h: f64, r: f64) {
++pub fn grid_columns(workspace_count: usize, cfg: &Config) -> usize {
++    if workspace_count == 0 {
++        return 1;
++    }
++    if cfg.appearance.workspace_columns > 0 {
++        return cfg.appearance.workspace_columns.min(workspace_count);
++    }
++    ((workspace_count as f64).sqrt().ceil() as usize).max(1)
++}
++
+@@ -105 +115 @@ fn draw_client(
+-    // Active-window indicator: coloured border so the user knows which window 'm' will move
++    // Active-window indicator, also useful when moving a window by mouse.
+@@ -129,0 +140,25 @@ fn draw_client(
++fn draw_search_bar(cr: &Context, width: u32, cfg: &Config, query: &str) {
++    let pad = cfg.appearance.card_padding;
++    let font = pango::FontDescription::from_string(&cfg.appearance.font);
++    let text = if query.is_empty() {
++        "Search applications…".to_owned()
++    } else {
++        format!("Search applications: {query}")
++    };
++    let search_w = (width as f64 - pad * 2.0).min(720.0);
++    let search_x = (width as f64 - search_w) / 2.0;
++    let (r, g, b, a) = cfg.colors.card.rgba();
++    rounded_rect(cr, search_x, 14.0, search_w, 30.0, cfg.appearance.card_radius.min(15.0));
++    cr.set_source_rgba(r, g, b, a);
++    cr.fill().ok();
++    let layout = pangocairo::functions::create_layout(cr);
++    layout.set_text(&text);
++    layout.set_font_description(Some(&font));
++    layout.set_width(((search_w - 24.0) * pango::SCALE as f64) as i32);
++    layout.set_ellipsize(pango::EllipsizeMode::End);
++    let (r, g, b, a) = cfg.colors.label.rgba();
++    cr.set_source_rgba(r, g, b, if query.is_empty() { a * 0.65 } else { a });
++    cr.move_to(search_x + 12.0, 21.0);
++    pangocairo::functions::show_layout(cr, &layout);
++}
++
+@@ -138,0 +174 @@ pub fn build_scene(
++    query: &str,
+@@ -144,0 +181 @@ pub fn build_scene(
++    draw_search_bar(&cr, width, cfg, query);
+@@ -145,0 +183,10 @@ pub fn build_scene(
++        if !query.is_empty() {
++            let layout = pangocairo::functions::create_layout(&cr);
++            layout.set_text("No matching workspaces");
++            layout.set_font_description(Some(&pango::FontDescription::from_string(&cfg.appearance.font)));
++            let (tw, th) = layout.pixel_size();
++            let (r, g, b, a) = cfg.colors.label.rgba();
++            cr.set_source_rgba(r, g, b, a * 0.7);
++            cr.move_to((width as f64 - tw as f64) / 2.0, (height as f64 - th as f64) / 2.0 + 22.0);
++            pangocairo::functions::show_layout(&cr, &layout);
++        }
+@@ -151 +198 @@ pub fn build_scene(
+-    let cols = ((n as f64).sqrt().ceil() as usize).max(1);
++    let cols = grid_columns(n, cfg);
+@@ -153,0 +201 @@ pub fn build_scene(
++    let search_h = 44.0;
+@@ -157 +205 @@ pub fn build_scene(
+-    let card_h = ((height as f64 - pad * (rows + 1) as f64) / rows as f64)
++    let card_h = ((height as f64 - search_h - pad * (rows + 1) as f64) / rows as f64)
+@@ -163 +211 @@ pub fn build_scene(
+-    let oy = (height as f64 - grid_h) / 2.0;
++    let oy = search_h + (height as f64 - search_h - grid_h) / 2.0;
+@@ -393 +441 @@ mod tests {
+-        let scene = build_scene(w, h, &workspaces, &thumbnails, &cfg, 0xb).unwrap();
++        let scene = build_scene(w, h, &workspaces, &thumbnails, &cfg, 0xb, "").unwrap();
+@@ -425 +473 @@ mod tests {
+-        let scene = build_scene(w, h, &workspaces, &thumbnails, &cfg, 0xb).unwrap();
++        let scene = build_scene(w, h, &workspaces, &thumbnails, &cfg, 0xb, "").unwrap();
+@@ -453 +501 @@ mod tests {
+-        let scene = build_scene(1280, 800, &workspaces, &thumbnails, &cfg, 0xb).unwrap();
++        let scene = build_scene(1280, 800, &workspaces, &thumbnails, &cfg, 0xb, "").unwrap();
