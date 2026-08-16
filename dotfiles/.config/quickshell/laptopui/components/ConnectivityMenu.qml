@@ -16,8 +16,10 @@ PopupWindow {
     anchor.edges: Edges.Bottom | Edges.Right
     anchor.gravity: Edges.Bottom | Edges.Right
     anchor.adjustment: PopupAdjustment.Flip | PopupAdjustment.Slide
-    implicitWidth: Capabilities.hasWifi && Capabilities.hasBluetooth ? 610 : 350
+    readonly property bool dualRadio: Capabilities.hasWifi && Capabilities.hasBluetooth
+    implicitWidth: dualRadio ? 640 : 350
     implicitHeight: content.implicitHeight
+    width: implicitWidth
     visible: false
     color: "transparent"
     grabFocus: true
@@ -32,7 +34,7 @@ PopupWindow {
             id: layout
             anchors.fill: parent; anchors.margins: 12; spacing: 9
             Item { visible: Capabilities.hasWifi
-                Layout.fillWidth: true; Layout.preferredWidth: 0; Layout.preferredHeight: wifiSection.implicitHeight; Layout.alignment: Qt.AlignTop
+                Layout.fillWidth: true; Layout.minimumWidth: root.dualRadio ? 280 : 0; Layout.preferredWidth: root.dualRadio ? 300 : 0; Layout.preferredHeight: wifiSection.implicitHeight; Layout.alignment: Qt.AlignTop
                 ColumnLayout { id: wifiSection; anchors.left: parent.left; anchors.right: parent.right; spacing: 7
                     RowLayout { Layout.fillWidth: true
                         Text { text: "Wi-Fi"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
@@ -54,7 +56,7 @@ PopupWindow {
             }
             Rectangle { visible: Capabilities.hasWifi && Capabilities.hasBluetooth; Layout.fillHeight: true; width: 1; color: Theme.surfaceHover }
             Item { visible: Capabilities.hasBluetooth
-                Layout.fillWidth: true; Layout.preferredWidth: 0; Layout.preferredHeight: bluetoothSection.implicitHeight; Layout.alignment: Qt.AlignTop
+                Layout.fillWidth: true; Layout.minimumWidth: root.dualRadio ? 280 : 0; Layout.preferredWidth: root.dualRadio ? 300 : 0; Layout.preferredHeight: bluetoothSection.implicitHeight; Layout.alignment: Qt.AlignTop
                 ColumnLayout { id: bluetoothSection; anchors.left: parent.left; anchors.right: parent.right; spacing: 7
                     RowLayout { Layout.fillWidth: true
                         Text { text: "Bluetooth"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
