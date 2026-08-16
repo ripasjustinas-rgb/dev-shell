@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Networking
 import QtQuick
 import QtQuick.Layouts
 import qs.services
@@ -6,6 +7,31 @@ import qs.theme
 
 RowLayout {
     spacing: 3
+
+    function wifiNetwork() {
+        for (const device of Networking.devices.values) {
+            if (device.type !== DeviceType.Wifi) continue
+            for (const network of device.networks.values) if (network.connected) return network
+        }
+        return null
+    }
+    function connectedBluetoothCount() {
+        return BluetoothState.devices.filter(device => device.connected).length
+    }
+    function connectivityIcon() {
+        if (Capabilities.hasWifi && !Capabilities.hasBluetooth) return "󰤨"
+        if (Capabilities.hasBluetooth && !Capabilities.hasWifi) return "󰂯"
+        if (wifiNetwork()) return "󰤨"
+        if (connectedBluetoothCount()) return "󰂯"
+        return "󰤭"
+    }
+    function connectivityTooltip() {
+        const details = []
+        const network = wifiNetwork()
+        if (Capabilities.hasWifi) details.push(network ? "Wi-Fi: " + network.name : "Wi-Fi disconnected")
+        if (Capabilities.hasBluetooth) details.push(connectedBluetoothCount() ? "Bluetooth: " + connectedBluetoothCount() + " connected" : "Bluetooth disconnected")
+        return details.join(" · ")
+    }
 
     SystemStats {}
 
@@ -22,8 +48,8 @@ RowLayout {
     PanelButton {
         id: connectivityButton
         visible: Capabilities.hasWifi || Capabilities.hasBluetooth
-        label: Capabilities.hasWifi ? "󰤨" : "󰂯"
-        tooltip: Capabilities.hasWifi && Capabilities.hasBluetooth ? "Connectivity" : (Capabilities.hasWifi ? "Wi-Fi" : "Bluetooth")
+        label: connectivityIcon()
+        tooltip: connectivityTooltip()
         onClicked: SettingsState.connectivityOpen = !SettingsState.connectivityOpen
     }
 

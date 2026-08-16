@@ -3,6 +3,7 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 PopupWindow {
     id: root
@@ -26,6 +27,10 @@ PopupWindow {
     function refresh() {
         statusQuery.exec(["wpctl", "status"])
         monitorQuery.exec(["hyprctl", "monitors", "-j"])
+    }
+    Connections {
+        target: SettingsState
+        function onAudioDeviceRefreshChanged() { root.refresh() }
     }
 
     function parseDevices(text) {

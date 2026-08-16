@@ -19,7 +19,13 @@ Item {
         stateQuery.exec(["sh", "-c", "bluetoothctl show 2>/dev/null; printf '\\n--DEVICES--\\n'; bluetoothctl devices 2>/dev/null | while IFS= read -r line; do address=$(printf '%s' \"$line\" | awk '{print $2}'); name=$(printf '%s' \"$line\" | cut -d' ' -f3-); [ -n \"$address\" ] || continue; info=$(bluetoothctl info \"$address\" 2>/dev/null); connected=$(printf '%s\\n' \"$info\" | sed -n 's/.*Connected: //p' | head -n1); paired=$(printf '%s\\n' \"$info\" | sed -n 's/.*Paired: //p' | head -n1); trusted=$(printf '%s\\n' \"$info\" | sed -n 's/.*Trusted: //p' | head -n1); battery=$(printf '%s\\n' \"$info\" | sed -n 's/.*Battery Percentage:.*(\\([0-9][0-9]*\\)).*/\\1/p' | head -n1); icon=$(printf '%s\\n' \"$info\" | sed -n 's/.*Icon: //p' | head -n1); printf '%s|%s|%s|%s|%s|%s|%s\\n' \"$address\" \"$name\" \"$connected\" \"$paired\" \"$trusted\" \"$battery\" \"$icon\"; done"])
     }
     function scan() { if (!available) return; scanning = !scanning; command.exec(["bluetoothctl", "scan", scanning ? "on" : "off"]); refreshTimer.restart() }
-    function run(action, address) { if (!available) return; error = ""; command.exec(["bluetoothctl", action, address]); refreshTimer.restart() }
+    function run(action, address) {
+        if (!available) return
+        error = ""
+        command.exec(["bluetoothctl", action, address])
+        if (action === "connect" || action === "disconnect") SettingsState.audioDeviceRefresh += 1
+        refreshTimer.restart()
+    }
     Component.onCompleted: refresh()
     Timer { id: refreshTimer; interval: 700; onTriggered: root.refresh() }
     Process { id: command; stderr: StdioCollector { onStreamFinished: { if (text.trim()) root.error = text.trim() } } }

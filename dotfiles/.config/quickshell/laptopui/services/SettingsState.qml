@@ -12,6 +12,7 @@ Item {
     // Transient overlay coordination; persistent preferences remain the only
     // values written to disk by this service.
     property bool connectivityOpen: false
+    property int audioDeviceRefresh: 0
     property string statePath: Quickshell.env("HOME") + "/.local/state/laptopui/settings"
 
     function save() {
