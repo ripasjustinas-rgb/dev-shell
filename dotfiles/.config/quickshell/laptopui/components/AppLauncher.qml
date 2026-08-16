@@ -11,10 +11,18 @@ Item {
     signal closeRequested()
     property string query: ""
     property string searchText: ""
+    property int selectedIndex: 0
     // Chosen daily drivers. Missing entries are simply omitted on another host.
     property var pinnedIds: ["Firefox", "Kitty", "Dolphin", "Htop"]
     property var recentIds: ["Htop", "Firefox", "Kitty", "Dolphin"]
     property string pinStatePath: Quickshell.env("HOME") + "/.local/state/laptopui/pinned-apps"
+    property string recentStatePath: Quickshell.env("HOME") + "/.local/state/laptopui/recent-apps"
+
+    function fuzzyMatch(haystack, needle) {
+        let cursor = 0
+        for (const character of needle) { cursor = haystack.indexOf(character, cursor); if (cursor < 0) return false; cursor++ }
+        return true
+    }
 
     function resolveEntry(key) {
         const exact = DesktopEntries.applications.values.find(entry => entry.id === key)
@@ -26,11 +34,12 @@ Item {
     function matchingEntries() {
         return DesktopEntries.applications.values.filter(entry => {
             const haystack = (entry.name + " " + entry.genericName + " " + entry.comment).toLowerCase()
-            return !entry.noDisplay && haystack.includes(query)
+            return !entry.noDisplay && fuzzyMatch(haystack, query)
         })
     }
     function remember(entry) {
         recentIds = [entry.id, ...recentIds.filter(id => id !== entry.id)].slice(0, 4)
+        recentWriter.exec(["sh", "-c", "mkdir -p \"$HOME/.local/state/laptopui\" && printf '%s\\n' '" + recentIds.join("' '") + "' > \"$HOME/.local/state/laptopui/recent-apps\""])
     }
     function launch(entry) {
         remember(entry)
@@ -45,6 +54,7 @@ Item {
     function reset() {
         query = ""
         searchText = ""
+        selectedIndex = 0
     }
     Process {
         id: pinReader
@@ -56,6 +66,8 @@ Item {
         }
     }
     Process { id: pinWriter }
+    Process { id: recentWriter }
+    Process { id: recentReader; stdout: StdioCollector { onStreamFinished: { const values = text.trim().split("\n").filter(value => value.length); if (values.length) root.recentIds = values } } }
     Timer { id: pinRefresh; interval: 150; onTriggered: root.refreshPins() }
 
     Variants {
@@ -69,7 +81,7 @@ Item {
             anchors { top: true; bottom: true; left: true; right: true }
             focusable: true
             onVisibleChanged: {
-                if (visible) { root.reset(); root.refreshPins() }
+                if (visible) { root.reset(); root.refreshPins(); recentReader.exec(["sh", "-c", "cat \"$HOME/.local/state/laptopui/recent-apps\" 2>/dev/null || true"]) }
             }
 
             MouseArea { anchors.fill: parent; onClicked: root.closeRequested() }
@@ -95,12 +107,14 @@ Item {
                             anchors.left: parent.left; anchors.leftMargin: 46; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
                             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 15; clip: true
                             text: root.searchText
-                            onTextChanged: { root.searchText = text; root.query = text.toLowerCase() }
+                            onTextChanged: { root.searchText = text; root.query = text.toLowerCase(); root.selectedIndex = 0 }
                             Keys.onEscapePressed: root.closeRequested()
                             Keys.onReturnPressed: {
                                 const matches = root.matchingEntries()
-                                if (root.query.length && matches.length === 1) root.launch(matches[0])
+                                if (root.query.length && matches.length) root.launch(matches[Math.min(root.selectedIndex, matches.length - 1)])
                             }
+                            Keys.onDownPressed: { const count = root.matchingEntries().length; if (count) root.selectedIndex = (root.selectedIndex + 1) % count }
+                            Keys.onUpPressed: { const count = root.matchingEntries().length; if (count) root.selectedIndex = (root.selectedIndex - 1 + count) % count }
                         }
                         Timer { interval: 1; running: root.open; onTriggered: search.forceActiveFocus() }
                         Text { visible: !search.text.length; anchors.left: parent.left; anchors.leftMargin: 46; anchors.verticalCenter: parent.verticalCenter; text: "Search applications…"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 15 }
@@ -160,7 +174,7 @@ Item {
                         delegate: Rectangle {
                             required property var modelData
                             readonly property string haystack: (modelData.name + " " + modelData.genericName + " " + modelData.comment).toLowerCase()
-                            visible: !modelData.noDisplay && haystack.includes(root.query)
+                            visible: !modelData.noDisplay && root.fuzzyMatch(haystack, root.query)
                             width: appList.width; height: visible ? 54 : 0; radius: 10
                             color: rowMouse.containsMouse ? Theme.surfaceHover : "transparent"
                             Behavior on height { NumberAnimation { duration: 100 } }

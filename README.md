@@ -57,6 +57,7 @@ Pradinis saugus patikrinimas:
 ```sh
 ./install.sh check --profile laptop
 ./install.sh install --profile laptop --dry-run
+./scripts/check-quickshell --diff
 ```
 
 Panelės ikonoms reikalingi `ttf-jetbrains-mono-nerd` ir `noto-fonts-emoji`,
@@ -93,6 +94,7 @@ Kasdieniai klavišai:
 - `SUPER+R` — programų launcher;
 - `SUPER+A` — control center;
 - `SUPER+N` — notification center / DND;
+- `SUPER+TAB` — workspace ir langų overview (paieška, `ESC` uždaro);
 - `SUPER+S` — viso ekrano (-ų) screenshot į `Pictures/Screenshots` ir clipboard;
 - `SUPER+SHIFT+S` — pažymėto regiono screenshot į `Pictures/Screenshots` ir clipboard;
 - `SUPER+A` — clipboard vaizdams rodo thumbnail; screenshot taip pat čia
@@ -108,6 +110,13 @@ Kasdieniai klavišai:
 
 Notification serverį valdo Quickshell. `mako.service` šiame profilyje yra
 išjungtas, kad nepradėtų konkuruojančio daemon'o.
+
+UI prisitaiko pagal realias galimybes: desktop'e be baterijos ir backlight
+atitinkami control center valdikliai nesikrauna. Panelės connectivity mygtukas
+atidaro vieną Wi-Fi/Bluetooth popup ir rodo tik realiai aptiktą adapterį.
+Bluetooth veiksmai vykdomi per vieną `bluetoothctl` servisą. DND ir „calm
+mode“ būsena išsaugoma `~/.local/state/laptopui/settings`; calm mode išjungia
+nebūtinus efektus ir gali būti perjungtas control center'yje.
 
 Interaktyvi terminalo aplinka naudoja Zsh, Oh My Zsh ir Starship. Bash lieka
 visų repo skriptų interpretatoriumi. Po paketų ir dotfiles įdiegimo Oh My Zsh

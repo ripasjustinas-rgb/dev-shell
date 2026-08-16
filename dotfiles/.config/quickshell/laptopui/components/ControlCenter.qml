@@ -4,6 +4,7 @@ import Quickshell.Networking
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 Item {
     id: root
@@ -24,10 +25,10 @@ Item {
     property real pendingBrightnessLevel: 0
 
     function refresh() {
-        sinkQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
-        sourceQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"])
-        brightnessQuery.exec(["brightnessctl", "-m"])
-        profileQuery.exec(["powerprofilesctl", "get"])
+        if (Capabilities.hasAudioSink) sinkQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
+        if (Capabilities.hasAudioSource) sourceQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"])
+        if (Capabilities.hasBacklight && Capabilities.hasBrightnessctl) brightnessQuery.exec(["brightnessctl", "-m"])
+        if (Capabilities.powerProfilesAvailable) profileQuery.exec(["powerprofilesctl", "get"])
     }
     function parseVolume(text, microphone) {
         const match = text.match(/Volume:\s+([0-9.]+)(\s+\[MUTED\])?/)
@@ -111,15 +112,16 @@ Item {
                             MouseArea { anchors.fill: parent; onClicked: root.closeRequested() } }
                     }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
-                    ControlRow { icon: root.sinkMuted ? "󰖁" : "󰕾"; title: "Volume"; value: root.sinkVolume; level: root.sinkLevel; muted: root.sinkMuted; muteAvailable: true; muteIcon: root.sinkMuted ? "󰖁" : "󰕾"; deviceSelectionAvailable: true; onLevelRequested: level => root.queueVolume("@DEFAULT_AUDIO_SINK@", level); onMuteRequested: root.mute("@DEFAULT_AUDIO_SINK@"); onDeviceSelectionChanged: delayedRefresh.restart() }
-                    ControlRow { icon: root.sourceMuted ? "󰍭" : "󰍬"; title: "Microphone"; value: root.sourceVolume; level: root.sourceLevel; muted: root.sourceMuted; muteAvailable: true; muteIcon: root.sourceMuted ? "󰍭" : "󰍬"; deviceSelectionAvailable: true; microphone: true; onLevelRequested: level => root.queueVolume("@DEFAULT_AUDIO_SOURCE@", level); onMuteRequested: root.mute("@DEFAULT_AUDIO_SOURCE@"); onDeviceSelectionChanged: delayedRefresh.restart() }
-                    ControlRow { icon: "󰃠"; title: "Brightness"; value: root.brightness; level: root.brightnessLevel; onLevelRequested: level => root.queueBrightness(level) }
+                    ControlRow { visible: Capabilities.hasAudioSink; icon: root.sinkMuted ? "󰖁" : "󰕾"; title: "Volume"; value: root.sinkVolume; level: root.sinkLevel; muted: root.sinkMuted; muteAvailable: true; muteIcon: root.sinkMuted ? "󰖁" : "󰕾"; deviceSelectionAvailable: true; onLevelRequested: level => root.queueVolume("@DEFAULT_AUDIO_SINK@", level); onMuteRequested: root.mute("@DEFAULT_AUDIO_SINK@"); onDeviceSelectionChanged: delayedRefresh.restart() }
+                    ControlRow { visible: Capabilities.hasAudioSource; icon: root.sourceMuted ? "󰍭" : "󰍬"; title: "Microphone"; value: root.sourceVolume; level: root.sourceLevel; muted: root.sourceMuted; muteAvailable: true; muteIcon: root.sourceMuted ? "󰍭" : "󰍬"; deviceSelectionAvailable: true; microphone: true; onLevelRequested: level => root.queueVolume("@DEFAULT_AUDIO_SOURCE@", level); onMuteRequested: root.mute("@DEFAULT_AUDIO_SOURCE@"); onDeviceSelectionChanged: delayedRefresh.restart() }
+                    ControlRow { visible: Capabilities.hasBacklight && Capabilities.hasBrightnessctl; icon: "󰃠"; title: "Brightness"; value: root.brightness; level: root.brightnessLevel; onLevelRequested: level => root.queueBrightness(level) }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
                     RowLayout {
                         Layout.fillWidth: true
-                        QuickToggle { icon: "󰤨"; label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off"; active: Networking.wifiEnabled; onClicked: Networking.wifiEnabled = !Networking.wifiEnabled }
-                        QuickToggle { icon: "󰂄"; label: root.profile; active: root.profile === "performance"; onClicked: profilePopup.open = !profilePopup.open }
-                        QuickToggle { icon: "󰏤"; label: "Notifications"; active: false; onClicked: { root.closeRequested(); Quickshell.execDetached(["qs", "-c", "laptopui", "ipc", "call", "laptopui", "toggleNotifications"]) } }
+                        QuickToggle { visible: Capabilities.hasWifi; icon: "󰤨"; label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off"; active: Networking.wifiEnabled; onClicked: Networking.wifiEnabled = !Networking.wifiEnabled }
+                        QuickToggle { visible: Capabilities.powerProfilesAvailable; icon: "󰂄"; label: root.profile; active: root.profile === "performance"; onClicked: profilePopup.open = !profilePopup.open }
+                        QuickToggle { icon: "󰏤"; label: SettingsState.calmMode ? "Calm" : "Effects"; active: SettingsState.calmMode; onClicked: SettingsState.toggleCalmMode() }
+                        QuickToggle { icon: "󰂚"; label: SettingsState.dnd ? "DND" : "Notifications"; active: SettingsState.dnd; onClicked: SettingsState.toggleDnd() }
                     }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
                     ClipboardHistory {
@@ -137,7 +139,7 @@ Item {
                     anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 18
                     Column {
                         anchors.fill: parent; anchors.margins: 8; spacing: 2
-                        Repeater { model: ["performance", "balanced", "power-saver"]
+                        Repeater { model: Capabilities.powerProfiles
                             delegate: QuickMenuItem { required property string modelData; text: modelData; active: root.profile === modelData; onClicked: { Quickshell.execDetached(["powerprofilesctl", "set", modelData]); profilePopup.open = false; delayedRefresh.restart() } }
                         }
                     }

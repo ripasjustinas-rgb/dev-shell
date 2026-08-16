@@ -5,6 +5,7 @@ import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 Item {
     id: root
@@ -20,6 +21,7 @@ Item {
     property real shimmerPhase: 0
 
     function triggerBeatWave() {
+        if (SettingsState.calmMode) return
         beatBurst = 1
         beatBurstDecay.restart()
         primaryBeatWave.restart()
@@ -27,6 +29,7 @@ Item {
     }
 
     function consumeBass(nextBass) {
+        if (SettingsState.calmMode) return
         const rise = nextBass - bassBaseline
         const onsetThreshold = Math.max(0.03, bassBaseline * 0.38)
         if (beatCooldownFrames > 0) beatCooldownFrames -= 1
@@ -148,14 +151,14 @@ Item {
     Timer {
         interval: 66
         repeat: true
-        running: root.activeMediaPlayer !== null
+        running: root.activeMediaPlayer !== null && !SettingsState.calmMode && Capabilities.hasCava
         onTriggered: if (!spectrumProcess.running) spectrumProcess.running = true
     }
 
     Timer {
         interval: 40
         repeat: true
-        running: true
+        running: !SettingsState.calmMode
         onTriggered: root.shimmerPhase += 0.03
     }
 
@@ -188,7 +191,7 @@ Item {
                     color: "transparent"
                     border.width: 1
                     border.color: Theme.glassHighlight
-                    opacity: 0.42 + 0.10 * Math.sin(root.shimmerPhase)
+                    opacity: SettingsState.calmMode ? 0.42 : 0.42 + 0.10 * Math.sin(root.shimmerPhase)
                 }
 
                 RowLayout {
@@ -210,7 +213,7 @@ Item {
                     color: Theme.glow
                     border.width: 1
                     border.color: Theme.accent
-                    opacity: root.activeMediaPlayer !== null
+                    opacity: root.activeMediaPlayer !== null && !SettingsState.calmMode
                         ? 0.035 + root.bassLevel * 0.24 + root.beatBurst * 0.12 : 0
                     z: 1
 
@@ -226,7 +229,7 @@ Item {
                     color: "transparent"
                     border.width: 1
                     border.color: Theme.accent
-                    opacity: root.activeMediaPlayer !== null
+                    opacity: root.activeMediaPlayer !== null && !SettingsState.calmMode
                         ? Math.pow(1 - root.beatWave, 1.6) * 0.72 : 0
                     z: 2
                 }
@@ -251,7 +254,7 @@ Item {
                     spacing: 7
 
                     MediaVisualizerWing {
-                        active: root.activeMediaPlayer !== null
+                        active: root.activeMediaPlayer !== null && !SettingsState.calmMode
                         mirrored: true
                         spectrumData: root.spectrumData
                         burstLevel: root.beatBurst
@@ -265,7 +268,7 @@ Item {
                     MediaPill { player: root.activeMediaPlayer }
 
                     MediaVisualizerWing {
-                        active: root.activeMediaPlayer !== null
+                        active: root.activeMediaPlayer !== null && !SettingsState.calmMode
                         spectrumData: root.spectrumData
                         burstLevel: root.beatBurst
                     }
@@ -284,7 +287,7 @@ Item {
                     height: 2
                     radius: 1
                     color: Theme.accent
-                    opacity: 0.16 + root.bassLevel * 0.7
+                    opacity: SettingsState.calmMode ? 0.16 : 0.16 + root.bassLevel * 0.7
                     Behavior on opacity { NumberAnimation { duration: 90 } }
                 }
             }

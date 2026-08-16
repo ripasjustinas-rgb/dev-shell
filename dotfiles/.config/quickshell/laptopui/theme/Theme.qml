@@ -27,5 +27,7 @@ QtObject {
     readonly property int spacing: 8
     readonly property int radius: 14
     readonly property int radiusLarge: 22
+    readonly property int animationFast: 150
+    readonly property int animationNormal: 220
     readonly property string fontFamily: "JetBrainsMono Nerd Font"
 }

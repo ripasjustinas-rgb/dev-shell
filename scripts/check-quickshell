@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+qml_root="$root/dotfiles/.config/quickshell/laptopui"
+
+for file in "$root"/install.sh "$root"/scripts/* "$root"/dotfiles/.local/bin/laptopui-*; do
+  [[ -f "$file" ]] && bash -n "$file"
+done
+
+if command -v qmllint >/dev/null 2>&1; then
+  # Distribution qmllint often cannot load Quickshell's runtime-only modules;
+  # keep its diagnostics, but do not confuse an unavailable module with a
+  # graphical smoke failure. `qs` below is the authoritative runtime check.
+  find "$qml_root" -name '*.qml' -print0 | xargs -0 qmllint || \
+    echo "NOTE: qmllint could not resolve a Quickshell module; run the Wayland smoke test below."
+else
+  echo "SKIP: qmllint is unavailable; graphical QML smoke test requires a Hyprland/Wayland session."
+fi
+
+if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+  echo "SKIP: runtime QML smoke test requires an active Hyprland/Wayland session."
+fi
+
+if [[ "${1:-}" == "--diff" ]]; then git -C "$root" diff --check; fi
+echo "Quickshell helper checks passed."

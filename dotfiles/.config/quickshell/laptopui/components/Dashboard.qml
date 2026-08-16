@@ -9,12 +9,14 @@ Item {
     property bool launcherOpen: false
     property bool notificationsOpen: false
     property bool powerOpen: false
+    property bool overviewOpen: false
 
     function closeOverlays() {
         controlOpen = false
         launcherOpen = false
         notificationsOpen = false
         powerOpen = false
+        overviewOpen = false
     }
 
     IpcHandler {
@@ -29,6 +31,7 @@ Item {
         }
         function toggleNotifications() { root.notificationsOpen = !root.notificationsOpen; root.controlOpen = false; root.launcherOpen = false }
         function togglePower() { root.powerOpen = !root.powerOpen; root.controlOpen = false; root.launcherOpen = false; root.notificationsOpen = false }
+        function toggleOverview() { root.overviewOpen = !root.overviewOpen; root.controlOpen = false; root.launcherOpen = false; root.notificationsOpen = false }
         function osd(kind: string) { osd.show(kind) }
         function refreshUpdates() { UpdateState.refresh() }
         function closeOverlays() { root.closeOverlays() }
@@ -38,5 +41,6 @@ Item {
     AppLauncher { id: launcher; open: root.launcherOpen; onCloseRequested: root.launcherOpen = false }
     NotificationCenter { open: root.notificationsOpen; onCloseRequested: root.notificationsOpen = false }
     PowerDialog { open: root.powerOpen; onCloseRequested: root.powerOpen = false }
+    Overview { open: root.overviewOpen; onCloseRequested: root.overviewOpen = false }
     Osd { id: osd }
 }

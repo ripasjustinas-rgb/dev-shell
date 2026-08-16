@@ -1,6 +1,7 @@
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
+import qs.services
 
 RowLayout {
     spacing: 3
@@ -18,15 +19,16 @@ RowLayout {
     PerformanceProfile {}
 
     PanelButton {
-        id: wifiButton
-        label: "󰤨"
-        tooltip: "Wi-Fi"
-        onClicked: wifiMenu.visible = !wifiMenu.visible
+        id: connectivityButton
+        visible: Capabilities.hasWifi || Capabilities.hasBluetooth
+        label: Capabilities.hasWifi ? "󰤨" : "󰂯"
+        tooltip: Capabilities.hasWifi && Capabilities.hasBluetooth ? "Connectivity" : (Capabilities.hasWifi ? "Wi-Fi" : "Bluetooth")
+        onClicked: connectivityMenu.visible = !connectivityMenu.visible
     }
 
-    WifiMenu {
-        id: wifiMenu
-        anchorItem: wifiButton
+    ConnectivityMenu {
+        id: connectivityMenu
+        anchorItem: connectivityButton
     }
 
     PanelButton {
