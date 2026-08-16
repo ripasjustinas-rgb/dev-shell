@@ -11,7 +11,7 @@ PanelButton {
     readonly property int percentage: rawPercentage <= 1
         ? Math.round(rawPercentage * 100)
         : Math.round(rawPercentage)
-    property string profile: "unavailable"
+    property string profile: Capabilities.activePowerProfile || "unavailable"
     visible: Capabilities.hasBattery && UPower.displayDevice.ready && UPower.displayDevice.isLaptopBattery
     implicitWidth: 74
     label: "󰁹 " + percentage + "%"
@@ -22,21 +22,4 @@ PanelButton {
     tooltip: "Battery and power profile"
     onClicked: Quickshell.execDetached(["qs", "-c", "laptopui", "ipc", "call", "laptopui", "toggleControlCenter"])
 
-    Process {
-        id: profileQuery
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const value = text.trim()
-                if (value.length) batteryButton.profile = value
-            }
-        }
-    }
-
-    Timer {
-        interval: 5000
-        running: batteryButton.visible && Capabilities.powerProfilesAvailable
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: profileQuery.exec(["powerprofilesctl", "get"])
-    }
 }

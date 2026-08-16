@@ -41,6 +41,11 @@ Item {
         }
         hasWifi = wifi
     }
+    function setPowerProfile(profile) {
+        if (!powerProfilesAvailable || !powerProfiles.includes(profile)) return
+        Quickshell.execDetached(["powerprofilesctl", "set", profile])
+        profileRefresh.restart()
+    }
 
     Component.onCompleted: { refresh(); deviceCapabilities() }
     Connections { target: Networking.devices; function onValuesChanged() { root.deviceCapabilities() } }
@@ -80,4 +85,5 @@ Item {
             root.activePowerProfile = parts.length > 1 ? parts[1].trim() : ""
         } }
     }
+    Timer { id: profileRefresh; interval: 250; onTriggered: root.refresh() }
 }

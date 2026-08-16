@@ -13,7 +13,7 @@ Item {
     property string sinkVolume: "—"
     property string sourceVolume: "—"
     property string brightness: "—"
-    property string profile: "balanced"
+    property string profile: Capabilities.activePowerProfile || "unavailable"
     property real clipboardHeight: 0
     property real sinkLevel: 0
     property real sourceLevel: 0
@@ -28,7 +28,6 @@ Item {
         if (Capabilities.hasAudioSink) sinkQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
         if (Capabilities.hasAudioSource) sourceQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"])
         if (Capabilities.hasBacklight && Capabilities.hasBrightnessctl) brightnessQuery.exec(["brightnessctl", "-m"])
-        if (Capabilities.powerProfilesAvailable) profileQuery.exec(["powerprofilesctl", "get"])
     }
     function parseVolume(text, microphone) {
         const match = text.match(/Volume:\s+([0-9.]+)(\s+\[MUTED\])?/)
@@ -60,7 +59,6 @@ Item {
     Process { id: sinkQuery; stdout: StdioCollector { onStreamFinished: root.parseVolume(text, false) } }
     Process { id: sourceQuery; stdout: StdioCollector { onStreamFinished: root.parseVolume(text, true) } }
     Process { id: brightnessQuery; stdout: StdioCollector { onStreamFinished: { const p = text.trim().split(","); root.brightness = p.length > 3 ? p[3].trim() : "—"; root.brightnessLevel = p.length > 3 ? Number.parseFloat(p[3]) : 0 } } }
-    Process { id: profileQuery; stdout: StdioCollector { onStreamFinished: { if (text.trim().length) root.profile = text.trim() } } }
     Timer { id: volumeApply; interval: 70; onTriggered: { Quickshell.execDetached(["wpctl", "set-volume", root.pendingVolumeTarget, Math.round(root.pendingVolumeLevel) + "%"]); delayedRefresh.restart() } }
     Timer { id: brightnessApply; interval: 70; onTriggered: root.setBrightness(root.pendingBrightnessLevel) }
     Timer { id: delayedRefresh; interval: 180; onTriggered: root.refresh() }
@@ -145,7 +143,7 @@ Item {
                     Column {
                         anchors.fill: parent; anchors.margins: 8; spacing: 2
                         Repeater { model: Capabilities.powerProfiles
-                            delegate: QuickMenuItem { required property string modelData; text: modelData; active: root.profile === modelData; onClicked: { Quickshell.execDetached(["powerprofilesctl", "set", modelData]); profilePopup.open = false; delayedRefresh.restart() } }
+                            delegate: QuickMenuItem { required property string modelData; text: modelData; active: root.profile === modelData; onClicked: { Capabilities.setPowerProfile(modelData); profilePopup.open = false; delayedRefresh.restart() } }
                         }
                     }
                 }

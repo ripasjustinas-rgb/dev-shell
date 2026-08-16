@@ -88,6 +88,7 @@ manifest() {
     "$repo_dir/dotfiles/.local/bin/laptopui-clipboard-preview" "$home_dir/.local/bin/laptopui-clipboard-preview" \
     "$repo_dir/dotfiles/.local/bin/laptopui-screenshot" "$home_dir/.local/bin/laptopui-screenshot" \
     "$repo_dir/dotfiles/.local/bin/laptopui-lock" "$home_dir/.local/bin/laptopui-lock" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-reload" "$home_dir/.local/bin/laptopui-reload" \
     "$repo_dir/dotfiles/.local/bin/laptopui-lid" "$home_dir/.local/bin/laptopui-lid" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-next" "$home_dir/.local/bin/laptopui-wallpaper-next" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-random" "$home_dir/.local/bin/laptopui-wallpaper-random" \

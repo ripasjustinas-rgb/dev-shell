@@ -19,6 +19,7 @@ Item {
         { title: "Region screenshot", category: "Capture", run: () => Quickshell.execDetached([Quickshell.env("HOME") + "/.local/bin/laptopui-screenshot", "region"]) },
         { title: "Toggle Do Not Disturb", category: "Shell", run: () => SettingsState.toggleDnd() },
         { title: "Toggle calm mode", category: "Shell", run: () => SettingsState.toggleCalmMode() },
+        { title: "Reload Quickshell", category: "Shell", run: () => Quickshell.execDetached([Quickshell.env("HOME") + "/.local/bin/laptopui-reload"]) },
         { title: "Wi-Fi and Bluetooth", category: "Connectivity", run: () => Quickshell.execDetached(["qs", "-c", "laptopui", "ipc", "call", "laptopui", "toggleConnectivity"]) },
         { title: "Audio devices", category: "System", run: () => Quickshell.execDetached(["qs", "-c", "laptopui", "ipc", "call", "laptopui", "toggleControlCenter"]) },
         { title: "Power profile", category: "System", run: () => Quickshell.execDetached(["qs", "-c", "laptopui", "ipc", "call", "laptopui", "toggleControlCenter"]) },

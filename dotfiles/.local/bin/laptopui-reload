@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+set -eu
+
+# Keep reload ownership in one small helper so command-palette and manual
+# reloads use the same behavior. `qs kill` only terminates the old instance;
+# it does not start a replacement by itself.
+qs -c laptopui kill >/dev/null 2>&1 || true
+sleep 0.2
+exec qs --no-duplicate --config laptopui
