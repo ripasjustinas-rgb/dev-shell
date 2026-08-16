@@ -11,6 +11,7 @@ wireplumber
 libnotify
 networkmanager
 bluez
+bluez-utils
 upower
 polkit-kde-agent
 

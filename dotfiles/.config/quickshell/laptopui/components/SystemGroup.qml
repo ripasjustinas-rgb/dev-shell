@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Bluetooth
 import Quickshell.Networking
 import QtQuick
 import QtQuick.Layouts
@@ -19,12 +20,14 @@ RowLayout {
         return BluetoothState.devices.filter(device => device.connected).length
     }
     function connectivityIcon() {
-        if (Capabilities.hasWifi && !Capabilities.hasBluetooth) return "󰤨"
+        const wifiIcon = Networking.wifiEnabled ? "󰤨" : "󰤮"
+        // Read adapterState directly as well as enabled: this keeps the label
+        // bound to BlueZ's transition notification, not merely the popup UI.
+        const bluetoothIcon = BluetoothState.available && (BluetoothState.adapterState === BluetoothAdapterState.Enabled || BluetoothState.adapterState === BluetoothAdapterState.Enabling) ? "󰂯" : "󰂲"
+        if (Capabilities.hasWifi && !Capabilities.hasBluetooth) return wifiIcon
         if (Capabilities.hasBluetooth && !Capabilities.hasWifi)
-            return BluetoothState.available && BluetoothState.enabled ? "󰂯" : "󰂲"
+            return bluetoothIcon
         if (Capabilities.hasWifi && Capabilities.hasBluetooth) {
-            const wifiIcon = wifiNetwork() ? "󰤨" : "󰤭"
-            const bluetoothIcon = connectedBluetoothCount() ? "󰂯" : "󰂲"
             return wifiIcon + " " + bluetoothIcon
         }
         return "󰤭"
@@ -32,8 +35,8 @@ RowLayout {
     function connectivityTooltip() {
         const details = []
         const network = wifiNetwork()
-        if (Capabilities.hasWifi) details.push(network ? "Wi-Fi: " + network.name : "Wi-Fi disconnected")
-        if (Capabilities.hasBluetooth) details.push(!BluetoothState.available ? "Bluetooth inactive" : (connectedBluetoothCount() ? "Bluetooth: " + connectedBluetoothCount() + " connected" : "Bluetooth disconnected"))
+        if (Capabilities.hasWifi) details.push(!Networking.wifiEnabled ? "Wi-Fi off" : (network ? "Wi-Fi: " + network.name : "Wi-Fi on, disconnected"))
+        if (Capabilities.hasBluetooth) details.push(!BluetoothState.available || !BluetoothState.enabled ? "Bluetooth off" : (connectedBluetoothCount() ? "Bluetooth: " + connectedBluetoothCount() + " connected" : "Bluetooth on, disconnected"))
         return details.join(" · ")
     }
 

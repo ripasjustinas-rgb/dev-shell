@@ -126,10 +126,12 @@ UI prisitaiko pagal realias galimybes: desktop'e be baterijos ir backlight
 atitinkami control center valdikliai nesikrauna. Panelės connectivity mygtukas
 atidaro vieną Wi-Fi/Bluetooth popup ir rodo tik realiai aptiktą adapterį. Kai
 abu adapteriai yra, viename mygtuke rodomos abi jų būsenos ikonos.
-Bluetooth veiksmai vykdomi per Quickshell vietinį BlueZ API, todėl vien
-`bluetoothctl` įdiegimas nėra aparatinės įrangos aptikimo sąlyga. DND ir „calm
-mode“ būsena išsaugoma `~/.local/state/laptopui/settings`; calm mode išjungia
-nebūtinus efektus ir gali būti perjungtas control center'yje.
+Bluetooth adapterio ir įrenginių būsenos vykdomos per Quickshell vietinį BlueZ
+API. Pairing dialogas naudoja `bluez-utils` pateikiamą `bluetoothctl` kaip
+interaktyvų BlueZ agentą, kad PIN ir numeric-comparison užklausos būtų rodomos
+popup'e, o ne terminale. DND ir „calm mode“ būsena išsaugoma
+`~/.local/state/laptopui/settings`; calm mode išjungia nebūtinus efektus ir
+gali būti perjungtas control center'yje.
 
 Interaktyvi terminalo aplinka naudoja Zsh, Oh My Zsh ir Starship. Bash lieka
 visų repo skriptų interpretatoriumi. Po paketų ir dotfiles įdiegimo Oh My Zsh
