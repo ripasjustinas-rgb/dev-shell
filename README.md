@@ -60,6 +60,9 @@ Pradinis saugus patikrinimas:
 ./scripts/check-quickshell --diff
 ```
 
+Pilna laptop/desktop priėmimo scenarijų matrica yra
+[docs/QUICKSHELL_TEST_MATRIX.md](docs/QUICKSHELL_TEST_MATRIX.md).
+
 Panelės ikonoms reikalingi `ttf-jetbrains-mono-nerd` ir `noto-fonts-emoji`,
 garso vizualizacijai — `cava`, o dinaminei paletei — `matugen` ir `jq`. Jie
 įtraukti į bendrą paketų manifestą ir įdiegiami su `packages` komanda.
