@@ -13,6 +13,7 @@ Item {
     property bool enabled: adapter ? adapter.enabled : false
     property bool scanning: adapter ? adapter.discovering : false
     property string error: ""
+    readonly property var deviceModel: adapter ? adapter.devices : null
     property var devices: adapter ? adapter.devices.values : []
     property var selectedDevice: null
 
