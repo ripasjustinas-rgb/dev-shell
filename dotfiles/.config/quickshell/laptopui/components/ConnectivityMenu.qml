@@ -19,7 +19,6 @@ PopupWindow {
     readonly property bool dualRadio: Capabilities.hasWifi && Capabilities.hasBluetooth
     implicitWidth: dualRadio ? 640 : 350
     implicitHeight: content.implicitHeight
-    width: implicitWidth
     visible: false
     color: "transparent"
     grabFocus: true
@@ -82,8 +81,8 @@ PopupWindow {
                             RowLayout { Layout.fillWidth: true; spacing: 8
                                 Text { visible: BluetoothState.selectedDevice && !BluetoothState.selectedDevice.paired && !BluetoothState.selectedDevice.pairing; text: "Pair"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: pairConfirm.visible = true } }
                                 Text { visible: BluetoothState.selectedDevice && BluetoothState.selectedDevice.pairing; text: "Pairing…"; color: Theme.muted; font.family: Theme.fontFamily }
-                                Text { visible: BluetoothState.selectedDevice && BluetoothState.selectedDevice.paired; text: BluetoothState.selectedDevice.connected ? "Disconnect" : "Connect"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: BluetoothState.run(BluetoothState.selectedDevice.connected ? "disconnect" : "connect", BluetoothState.selectedDevice.address) } }
-                                Text { visible: BluetoothState.selectedDevice && BluetoothState.selectedDevice.paired; text: BluetoothState.selectedDevice.trusted ? "Untrust" : "Trust"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: BluetoothState.run("trust", BluetoothState.selectedDevice.address) } }
+                                Text { visible: BluetoothState.selectedDevice && BluetoothState.selectedDevice.paired; text: BluetoothState.selectedDevice && BluetoothState.selectedDevice.paired ? (BluetoothState.selectedDevice.connected ? "Disconnect" : "Connect") : ""; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: BluetoothState.run(BluetoothState.selectedDevice.connected ? "disconnect" : "connect", BluetoothState.selectedDevice.address) } }
+                                Text { visible: BluetoothState.selectedDevice && BluetoothState.selectedDevice.paired; text: BluetoothState.selectedDevice && BluetoothState.selectedDevice.paired ? (BluetoothState.selectedDevice.trusted ? "Untrust" : "Trust") : ""; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: BluetoothState.run("trust", BluetoothState.selectedDevice.address) } }
                                 Text { visible: BluetoothState.selectedDevice && BluetoothState.selectedDevice.paired; text: "Forget"; color: Theme.danger; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: { BluetoothState.run("remove", BluetoothState.selectedDevice.address); BluetoothState.selectedDevice = null } } }
                             }
                         }
