@@ -2,9 +2,11 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 import qs.theme
+import qs.services
 
 PanelButton {
     id: audioButton
+    visible: Capabilities.hasAudioSink
     property string volume: "—"
     property bool muted: false
     label: muted ? "󰖁" : (volume === "—" ? "󰕾" : "󰕾 " + volume)
@@ -12,7 +14,7 @@ PanelButton {
     tooltip: "Volume and microphone"
 
     function refresh() {
-        sinkQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
+        if (Capabilities.hasAudioSink) sinkQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
     }
 
     onClicked: Quickshell.execDetached(["qs", "-c", "laptopui", "ipc", "call", "laptopui", "toggleControlCenter"])
@@ -29,7 +31,7 @@ PanelButton {
     }
     Timer {
         interval: 2000
-        running: true
+        running: audioButton.visible
         repeat: true
         triggeredOnStart: true
         onTriggered: audioButton.refresh()

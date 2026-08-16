@@ -1,9 +1,11 @@
 import Quickshell.Io
 import QtQuick
 import qs.theme
+import qs.services
 
 PanelButton {
     id: root
+    visible: Capabilities.powerProfilesAvailable
     property string profile: "unavailable"
     property bool performanceAvailable: false
     label: profile === "performance" ? "󰓅" : profile === "power-saver" ? "󰾆" : "󰾅"
@@ -13,6 +15,7 @@ PanelButton {
     tooltip: "Power profile: " + profile
 
     function refresh() {
+        if (!Capabilities.powerProfilesAvailable) return
         profileQuery.exec(["powerprofilesctl", "get"])
         profilesQuery.exec(["powerprofilesctl", "list"])
     }
@@ -34,5 +37,5 @@ PanelButton {
     }
     Process { id: setProfile; onExited: refreshDelay.restart() }
     Timer { id: refreshDelay; interval: 180; onTriggered: root.refresh() }
-    Timer { interval: 5000; running: true; repeat: true; triggeredOnStart: true; onTriggered: root.refresh() }
+    Timer { interval: 5000; running: root.visible; repeat: true; triggeredOnStart: true; onTriggered: root.refresh() }
 }

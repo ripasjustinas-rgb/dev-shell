@@ -3,6 +3,7 @@ import Quickshell.Io
 import Quickshell.Services.UPower
 import QtQuick
 import qs.theme
+import qs.services
 
 PanelButton {
     id: batteryButton
@@ -11,7 +12,7 @@ PanelButton {
         ? Math.round(rawPercentage * 100)
         : Math.round(rawPercentage)
     property string profile: "unavailable"
-    visible: UPower.displayDevice.ready && UPower.displayDevice.isLaptopBattery
+    visible: Capabilities.hasBattery && UPower.displayDevice.ready && UPower.displayDevice.isLaptopBattery
     implicitWidth: 74
     label: "󰁹 " + percentage + "%"
     labelColor: profile === "performance" ? Theme.danger
@@ -33,7 +34,7 @@ PanelButton {
 
     Timer {
         interval: 5000
-        running: true
+        running: batteryButton.visible && Capabilities.powerProfilesAvailable
         repeat: true
         triggeredOnStart: true
         onTriggered: profileQuery.exec(["powerprofilesctl", "get"])
