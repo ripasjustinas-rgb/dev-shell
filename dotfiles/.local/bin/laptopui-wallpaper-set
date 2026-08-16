@@ -1,0 +1,41 @@
+#!/usr/bin/env sh
+set -eu
+
+wallpaper=${1:-}
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui"
+state_file="$state_dir/wallpaper"
+helper_dir="$HOME/.local/bin"
+theme_error_log="$state_dir/theme-errors.log"
+
+[ -n "$wallpaper" ] && [ -f "$wallpaper" ] || exit 1
+case "$wallpaper" in
+    *.[Pp][Nn][Gg]|*.[Jj][Pp][Gg]|*.[Jj][Pp][Ee][Gg]|*.[Ww][Ee][Bb][Pp]) ;;
+    *) exit 1 ;;
+esac
+
+mkdir -p -- "$state_dir"
+printf '%s\n' "$wallpaper" >"$state_file"
+
+# ThemeLoader and Wallpaper.qml observe the state files, so a picker selection
+# updates the running shell without restarting it.
+"$helper_dir/laptopui-theme-generate" "$wallpaper" \
+    >/dev/null 2>>"$theme_error_log" || true
+
+# Quickshell owns the background during a normal session. Retain hyprpaper as
+# a fallback for a session where the shell has not started yet.
+pgrep -x qs >/dev/null 2>&1 && exit 0
+
+if ! pgrep -x hyprpaper >/dev/null 2>&1; then
+    hyprpaper >/dev/null 2>&1 &
+    tries=0
+    while ! hyprctl hyprpaper listactive >/dev/null 2>&1; do
+        tries=$((tries + 1))
+        [ "$tries" -lt 30 ] || exit 1
+        sleep 0.1
+    done
+fi
+
+hyprctl monitors | awk '/^Monitor / { print $2 }' | while IFS= read -r monitor; do
+    [ -n "$monitor" ] || continue
+    hyprctl hyprpaper wallpaper "$monitor,$wallpaper" >/dev/null
+done

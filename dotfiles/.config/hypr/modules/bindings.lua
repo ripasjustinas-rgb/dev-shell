@@ -12,8 +12,12 @@ hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("qs -c laptopui ipc call laptopui tog
 -- user service; Super+Tab only toggles its zero-idle-cost overlay.
 hl.bind(mainMod .. " + TAB", hl.dsp.exec_cmd("pkill -SIGUSR1 -x laptopui-hyprex"))
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("$HOME/.local/bin/laptopui-lock"))
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))
+-- Shift_L keeps this separate from the right Shift key.
+-- Modifier-only targets fire on key release; keep Super held while releasing
+-- the left Shift key.
+hl.bind(mainMod .. " + SHIFT + Shift_L", hl.dsp.layout("togglesplit"), { release = true })
 for _, direction in ipairs({"left", "right", "up", "down"}) do
   hl.bind(mainMod .. " + " .. direction, hl.dsp.focus({ direction = direction }))
 end

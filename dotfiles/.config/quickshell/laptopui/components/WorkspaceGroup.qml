@@ -54,16 +54,11 @@ RowLayout {
     PanelButton {
         id: wallpaperButton
         label: "󰸉"
-        tooltip: "Next wallpaper"
-        // Keep this as a Quickshell-managed process. It preserves the live
-        // Hyprland socket environment and makes the click work even when the
-        // panel was launched without a login-shell PATH.
-        onClicked: wallpaperChanger.exec([Quickshell.env("HOME") + "/.local/bin/laptopui-wallpaper-next"])
-
-        Process {
-            id: wallpaperChanger
-        }
+        tooltip: "Choose wallpaper"
+        onClicked: wallpaperPicker.open = !wallpaperPicker.open
     }
+
+    WallpaperPicker { id: wallpaperPicker }
 
     UpdateButton {}
 }

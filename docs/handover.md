@@ -25,6 +25,8 @@ Dabartinė versija apima:
 - vieną Wi-Fi/Bluetooth connectivity popup, `SUPER+TAB` langų overview ir
   `SUPER+SHIFT+R` command palette;
 - persistuojamą DND bei calm mode; calm mode sustabdo `cava` procesą.
+- wallpaper pickerį kairėje panelės pusėje: miniatiūrų tinklelis, konkretus
+  pasirinkimas bei „Next“ ir „Random“ veiksmai.
 
 ## 0. Saugumo taisyklės
 
@@ -216,6 +218,34 @@ jų rodoma unavailable, patikrink helperį ir ryšį:
 
 ```sh
 ~/.local/bin/laptopui-weather --forecast
+```
+
+### Wallpaper pickeris
+
+Kairysis mygtukas su wallpaper ikona atidaro didelį, prie ekrano prisitaikantį
+pickerį. Jis iš `LAPTOPUI_WALLPAPER_DIR` (numatytai `~/Wallpapers`) nuskaito
+PNG, JPG/JPEG ir WebP failus, rodo jų miniatiūras ir pažymi aktyvų pasirinkimą.
+Kortelė išsiplečia iki 820 px pločio ir 760 px aukščio, neperžengdama ekrano;
+stulpelių skaičius prisitaiko prie turimos vietos.
+
+- Paspaudus miniatiūrą iškviečiamas `laptopui-wallpaper-set`.
+- „Next“ išlaiko deterministinį rikiuotės ciklą, o „Random“ neparenka šiuo
+  metu aktyvaus fono, jei yra daugiau nei vienas failas.
+- Visi trys keliai įrašo `~/.local/state/laptopui/wallpaper`, sugeneruoja
+  `matugen` paletę ir atnaujina veikiantį Quickshell foną su crossfade. Jei
+  Quickshell neveikia, tas pats helperis pritaiko foną per `hyprpaper`.
+
+Po atnaujinimo įdiek naują helperį per įprastą profilinį diegimą, pvz.:
+
+```sh
+cd ~/dev-shell
+./install.sh install --profile desktop
+```
+
+Greitam QML pakeitimų pritaikymui veikiamoje sesijoje:
+
+```sh
+~/.local/bin/laptopui-reload
 ```
 
 Desktop neturi lid įrenginio, todėl lid bind'ai ir inhibitorius kasdieniam

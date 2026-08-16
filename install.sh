@@ -92,6 +92,7 @@ manifest() {
     "$repo_dir/dotfiles/.local/bin/laptopui-lid" "$home_dir/.local/bin/laptopui-lid" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-next" "$home_dir/.local/bin/laptopui-wallpaper-next" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-random" "$home_dir/.local/bin/laptopui-wallpaper-random" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-set" "$home_dir/.local/bin/laptopui-wallpaper-set" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-restore" "$home_dir/.local/bin/laptopui-wallpaper-restore"
 }
 

@@ -5,7 +5,6 @@ wallpaper_dir=${LAPTOPUI_WALLPAPER_DIR:-"${HOME}/Wallpapers"}
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/laptopui"
 state_file="$state_dir/wallpaper"
 helper_dir="$HOME/.local/bin"
-theme_error_log="$state_dir/theme-errors.log"
 
 [[ -d "$wallpaper_dir" ]] || exit 0
 
@@ -28,10 +27,4 @@ for wallpaper in "${wallpapers[@]}"; do
 done
 
 selected=${candidates[RANDOM % ${#candidates[@]}]}
-mkdir -p -- "$state_dir"
-printf '%s\n' "$selected" >"$state_file"
-
-# Generate the palette before Quickshell starts, so its first rendered frame
-# already matches the randomly selected wallpaper.
-"$helper_dir/laptopui-theme-generate" "$selected" \
-  >/dev/null 2>>"$theme_error_log" || true
+exec "$helper_dir/laptopui-wallpaper-set" "$selected"
