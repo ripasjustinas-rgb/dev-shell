@@ -21,8 +21,11 @@ RowLayout {
     function connectivityIcon() {
         if (Capabilities.hasWifi && !Capabilities.hasBluetooth) return "󰤨"
         if (Capabilities.hasBluetooth && !Capabilities.hasWifi) return "󰂯"
-        if (wifiNetwork()) return "󰤨"
-        if (connectedBluetoothCount()) return "󰂯"
+        if (Capabilities.hasWifi && Capabilities.hasBluetooth) {
+            const wifiIcon = wifiNetwork() ? "󰤨" : "󰤭"
+            const bluetoothIcon = connectedBluetoothCount() ? "󰂯" : "󰂲"
+            return wifiIcon + " " + bluetoothIcon
+        }
         return "󰤭"
     }
     function connectivityTooltip() {

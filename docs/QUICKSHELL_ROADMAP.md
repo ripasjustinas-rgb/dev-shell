@@ -161,14 +161,14 @@ veiksmas turi būti rodomi savo sekcijoje, kad vieno backend'o problema
 neužblokuotų kito.
 
 Panelės connectivity mygtukas turi likti dabartinio Wi-Fi mygtuko vietoje ir
-rodyti tik kompiuteryje realiai esančio ryšio tipo ikoną:
+rodyti tik kompiuteryje realiai esančių ryšio tipų būsenas:
 
 - jei yra Wi-Fi, bet nėra Bluetooth, visose būsenose rodoma tik Wi-Fi ikona;
 - jei yra Bluetooth, bet nėra Wi-Fi, visose būsenose rodoma tik Bluetooth
   ikona;
 - trūkstamo adapterio ikona niekada nerodoma net kaip išjungta būsena;
-- jei yra abu adapteriai, vis tiek rodoma viena ikona: prijungto Wi-Fi signalo
-  ikona turi prioritetą, kitu atveju rodoma prijungto Bluetooth būsena;
+- jei yra abu adapteriai, tame pačiame mygtuke rodoma Wi-Fi ir Bluetooth
+  būsena; tai vis tiek vienas mygtukas ir vienas bendras popup;
 - jei abu esantys adapteriai išjungti arba neprijungti, rodoma neutrali
   connectivity/offline būsena, neapsimetant, kad hoste yra trūkstamas
   adapteris;

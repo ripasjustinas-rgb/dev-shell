@@ -10,7 +10,7 @@ Kiekviename scenarijuje patikrink, kad `qs -c laptopui list` rodo vieną
 | Desktopas | `SUPER+A` | Nėra battery/backlight eilučių ir jų backend’ai nepollinami. |
 | Offline | Atidaryk calendar popup | Weather ir forecast rodo unavailable/offline būseną, panelės layout nesikeičia. |
 | Be performance profilio | Atidaryk profile meniu | `performance` pasirinkimas nerodomas; keitimas veikia tik esantiems profiliams. |
-| Wi-Fi/Bluetooth | Spausk panelės connectivity ikoną | Atsidaro vienas popup; rodomos tik realiai aptiktų adapterių sekcijos. |
+| Wi-Fi/Bluetooth | Spausk panelės connectivity ikoną | Atsidaro vienas popup; rodomos tik realiai aptiktų adapterių sekcijos. Jei yra abu, panelėje matomos abi būsenos ikonos. |
 | Bluetooth audio | Pair/connect ausines | Veiksmas prašo patvirtinimo; prisijungus audio įrenginių sąrašas atsinaujina. |
 | Du monitoriai | Atidaryk overview su `SUPER+TAB` | Panelė yra abiejuose ekranuose; overview rodo workspace monitorių ir leidžia pereiti rodyklėmis bei `Enter`. |
 | Notifications | Išsiųsk test notification | Panelėje atsiranda unread skaičius; `SUPER+N` jį išvalo, veiksmai veikia, DND išlieka po reload. |

@@ -120,8 +120,10 @@ perkrauti Quickshell per `laptopui-reload` helperį.
 
 UI prisitaiko pagal realias galimybes: desktop'e be baterijos ir backlight
 atitinkami control center valdikliai nesikrauna. Panelės connectivity mygtukas
-atidaro vieną Wi-Fi/Bluetooth popup ir rodo tik realiai aptiktą adapterį.
-Bluetooth veiksmai vykdomi per vieną `bluetoothctl` servisą. DND ir „calm
+atidaro vieną Wi-Fi/Bluetooth popup ir rodo tik realiai aptiktą adapterį. Kai
+abu adapteriai yra, viename mygtuke rodomos abi jų būsenos ikonos.
+Bluetooth veiksmai vykdomi per Quickshell vietinį BlueZ API, todėl vien
+`bluetoothctl` įdiegimas nėra aparatinės įrangos aptikimo sąlyga. DND ir „calm
 mode“ būsena išsaugoma `~/.local/state/laptopui/settings`; calm mode išjungia
 nebūtinus efektus ir gali būti perjungtas control center'yje.
 
