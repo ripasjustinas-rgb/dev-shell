@@ -55,8 +55,9 @@ PopupWindow {
                     RowLayout { Layout.fillWidth: true
                         Text { text: "Bluetooth"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
                         Item { Layout.fillWidth: true }
-                        Text { text: BluetoothState.enabled ? "ON" : "OFF"; color: BluetoothState.enabled ? Theme.accent : Theme.muted; font.family: Theme.fontFamily }
-                        MouseArea { width: 38; height: 25; onClicked: BluetoothState.run("power", BluetoothState.enabled ? "off" : "on") }
+                        Text { text: !BluetoothState.available ? "INACTIVE" : (BluetoothState.enabled ? "ON" : "OFF"); color: BluetoothState.enabled ? Theme.accent : Theme.muted; font.family: Theme.fontFamily }
+                        Text { text: !BluetoothState.available ? "Enable" : ""; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; enabled: !BluetoothState.available; onClicked: BluetoothState.activateService() } }
+                        MouseArea { visible: BluetoothState.available; width: 38; height: 25; onClicked: BluetoothState.run("power", BluetoothState.enabled ? "off" : "on") }
                         Text { visible: BluetoothState.enabled; text: BluetoothState.scanning ? "Stop" : "Scan"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: BluetoothState.scan() } }
                     }
                     Repeater { model: BluetoothState.devices

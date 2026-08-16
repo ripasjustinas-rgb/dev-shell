@@ -1,5 +1,6 @@
 pragma Singleton
 
+import Quickshell
 import Quickshell.Bluetooth
 import QtQuick
 import qs.services
@@ -19,6 +20,12 @@ Item {
     function refresh() {}
     function scan() {
         if (adapter && adapter.enabled) adapter.discovering = !adapter.discovering
+    }
+    function activateService() {
+        error = ""
+        // systemctl delegates authorization to the active desktop polkit agent.
+        // Once BlueZ starts, Bluetooth.defaultAdapter updates automatically.
+        Quickshell.execDetached(["systemctl", "start", "bluetooth.service"])
     }
     function run(action, address) {
         if (!adapter) return

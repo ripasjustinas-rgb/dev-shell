@@ -20,7 +20,8 @@ RowLayout {
     }
     function connectivityIcon() {
         if (Capabilities.hasWifi && !Capabilities.hasBluetooth) return "󰤨"
-        if (Capabilities.hasBluetooth && !Capabilities.hasWifi) return "󰂯"
+        if (Capabilities.hasBluetooth && !Capabilities.hasWifi)
+            return BluetoothState.available && BluetoothState.enabled ? "󰂯" : "󰂲"
         if (Capabilities.hasWifi && Capabilities.hasBluetooth) {
             const wifiIcon = wifiNetwork() ? "󰤨" : "󰤭"
             const bluetoothIcon = connectedBluetoothCount() ? "󰂯" : "󰂲"
@@ -32,7 +33,7 @@ RowLayout {
         const details = []
         const network = wifiNetwork()
         if (Capabilities.hasWifi) details.push(network ? "Wi-Fi: " + network.name : "Wi-Fi disconnected")
-        if (Capabilities.hasBluetooth) details.push(connectedBluetoothCount() ? "Bluetooth: " + connectedBluetoothCount() + " connected" : "Bluetooth disconnected")
+        if (Capabilities.hasBluetooth) details.push(!BluetoothState.available ? "Bluetooth inactive" : (connectedBluetoothCount() ? "Bluetooth: " + connectedBluetoothCount() + " connected" : "Bluetooth disconnected"))
         return details.join(" · ")
     }
 
