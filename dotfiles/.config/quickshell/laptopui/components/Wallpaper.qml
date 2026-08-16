@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
+import qs.theme
 
 Item {
     Variants {
@@ -56,6 +57,21 @@ Item {
                     } else {
                         fade.start()
                     }
+                }
+            }
+
+            // Static deterministic grain adds texture without a timer, shader,
+            // or input surface. It is intentionally behind every overlay.
+            Repeater {
+                model: 96
+                delegate: Rectangle {
+                    required property int index
+                    x: (index * 137) % Math.max(1, root.width)
+                    y: (index * 271) % Math.max(1, root.height)
+                    width: 1
+                    height: 1
+                    color: index % 2 ? Theme.text : Theme.background
+                    opacity: 0.035
                 }
             }
 

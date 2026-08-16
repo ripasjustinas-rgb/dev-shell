@@ -35,6 +35,7 @@ Item {
         function togglePower() { root.powerOpen = !root.powerOpen; root.controlOpen = false; root.launcherOpen = false; root.notificationsOpen = false }
         function toggleOverview() { root.overviewOpen = !root.overviewOpen; root.controlOpen = false; root.launcherOpen = false; root.notificationsOpen = false }
         function toggleCommandPalette() { root.commandPaletteOpen = !root.commandPaletteOpen; root.controlOpen = false; root.launcherOpen = false; root.notificationsOpen = false }
+        function toggleConnectivity() { SettingsState.connectivityOpen = !SettingsState.connectivityOpen; root.closeOverlays() }
         function osd(kind: string) { osd.show(kind) }
         function refreshUpdates() { UpdateState.refresh() }
         function closeOverlays() { root.closeOverlays() }

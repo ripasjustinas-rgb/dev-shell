@@ -23,12 +23,14 @@ RowLayout {
         visible: Capabilities.hasWifi || Capabilities.hasBluetooth
         label: Capabilities.hasWifi ? "󰤨" : "󰂯"
         tooltip: Capabilities.hasWifi && Capabilities.hasBluetooth ? "Connectivity" : (Capabilities.hasWifi ? "Wi-Fi" : "Bluetooth")
-        onClicked: connectivityMenu.visible = !connectivityMenu.visible
+        onClicked: SettingsState.connectivityOpen = !SettingsState.connectivityOpen
     }
 
     ConnectivityMenu {
         id: connectivityMenu
         anchorItem: connectivityButton
+        visible: SettingsState.connectivityOpen
+        onVisibleChanged: if (!visible) SettingsState.connectivityOpen = false
     }
 
     PanelButton {

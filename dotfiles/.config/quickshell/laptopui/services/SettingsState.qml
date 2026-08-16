@@ -9,6 +9,9 @@ QtObject {
     property bool dnd: false
     property bool calmMode: false
     property bool reducedMotion: false
+    // Transient overlay coordination; persistent preferences remain the only
+    // values written to disk by this service.
+    property bool connectivityOpen: false
     property string statePath: Quickshell.env("HOME") + "/.local/state/laptopui/settings"
 
     function save() {
