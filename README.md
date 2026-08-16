@@ -92,6 +92,7 @@ Paketai diegiami tik atskirai paprašius:
 Kasdieniai klavišai:
 
 - `SUPER+R` — programų launcher;
+- `SUPER+SHIFT+R` — command palette sistemos veiksmams;
 - `SUPER+A` — control center;
 - `SUPER+N` — notification center / DND;
 - `SUPER+TAB` — workspace ir langų overview (paieška, `ESC` uždaro);

@@ -5,6 +5,7 @@ hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("qs -c laptopui ipc call laptopui toggleCommandPalette"))
 hl.bind(mainMod .. " + A", hl.dsp.exec_cmd("qs -c laptopui ipc call laptopui toggleControlCenter"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("qs -c laptopui ipc call laptopui toggleNotifications"))
 hl.bind(mainMod .. " + TAB", hl.dsp.exec_cmd("qs -c laptopui ipc call laptopui toggleOverview"))

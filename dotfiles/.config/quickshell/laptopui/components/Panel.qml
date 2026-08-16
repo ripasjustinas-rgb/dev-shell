@@ -73,9 +73,15 @@ Item {
         activeMediaPlayer = best
     }
 
-    Component.onCompleted: Quickshell.execDetached([
-        Quickshell.env("HOME") + "/.local/bin/laptopui-visualizer-daemon"
-    ])
+    Connections {
+        target: SettingsState
+        function onCalmModeChanged() {
+            if (SettingsState.calmMode) {
+                spectrumProcess.running = false
+                Quickshell.execDetached([Quickshell.env("HOME") + "/.local/bin/laptopui-visualizer-daemon", "--stop"])
+            }
+        }
+    }
 
     Instantiator {
         model: Mpris.players

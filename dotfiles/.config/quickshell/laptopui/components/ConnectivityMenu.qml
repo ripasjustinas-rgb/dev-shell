@@ -61,12 +61,30 @@ PopupWindow {
                     }
                     Repeater { model: BluetoothState.devices
                         delegate: Rectangle { required property var modelData; Layout.fillWidth: true; height: 38; radius: Theme.radius; color: deviceMouse.containsMouse ? Theme.surfaceHover : "transparent"
-                            Text { anchors.left: parent.left; anchors.leftMargin: 8; anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; text: modelData.name; color: Theme.text; font.family: Theme.fontFamily; elide: Text.ElideRight }
-                            MouseArea { id: deviceMouse; anchors.fill: parent; hoverEnabled: true; onClicked: BluetoothState.run("connect", modelData.address) }
+                            RowLayout { anchors.fill: parent; anchors.margins: 8; Text { text: modelData.name; color: modelData.connected ? Theme.accent : Theme.text; font.family: Theme.fontFamily; elide: Text.ElideRight; Layout.fillWidth: true }; Text { text: modelData.connected ? "connected" : (modelData.paired ? "paired" : "new"); color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 }; Text { visible: modelData.battery.length > 0; text: modelData.battery + "%"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 } }
+                            MouseArea { id: deviceMouse; anchors.fill: parent; hoverEnabled: true; onClicked: BluetoothState.selectedDevice = modelData }
+                        }
+                    }
+                    Rectangle { visible: BluetoothState.selectedDevice !== null; Layout.fillWidth: true; height: 72; radius: Theme.radius; color: Theme.elevated
+                        ColumnLayout { anchors.fill: parent; anchors.margins: 8; spacing: 4
+                            Text { text: BluetoothState.selectedDevice ? BluetoothState.selectedDevice.name : ""; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 11 }
+                            RowLayout { Layout.fillWidth: true; spacing: 8
+                                Text { visible: BluetoothState.selectedDevice && !BluetoothState.selectedDevice.paired; text: "Pair"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: pairConfirm.visible = true } }
+                                Text { visible: BluetoothState.selectedDevice && BluetoothState.selectedDevice.paired; text: BluetoothState.selectedDevice.connected ? "Disconnect" : "Connect"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: BluetoothState.run(BluetoothState.selectedDevice.connected ? "disconnect" : "connect", BluetoothState.selectedDevice.address) } }
+                                Text { visible: BluetoothState.selectedDevice && BluetoothState.selectedDevice.paired; text: BluetoothState.selectedDevice.trusted ? "Untrust" : "Trust"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: BluetoothState.run("trust", BluetoothState.selectedDevice.address) } }
+                                Text { visible: BluetoothState.selectedDevice && BluetoothState.selectedDevice.paired; text: "Forget"; color: Theme.danger; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: BluetoothState.run("remove", BluetoothState.selectedDevice.address); BluetoothState.selectedDevice = null } }
+                            }
                         }
                     }
                     Text { visible: BluetoothState.error.length > 0; text: BluetoothState.error; color: Theme.danger; font.family: Theme.fontFamily; font.pixelSize: 10; wrapMode: Text.Wrap }
                 }
+            }
+        }
+        Rectangle { id: pairConfirm; visible: false; z: 10; anchors.fill: parent; radius: Theme.radius; color: Theme.background; border.color: Theme.accent; border.width: 1
+            ColumnLayout { anchors.centerIn: parent; width: parent.width - 34; spacing: 10
+                Text { text: "Pair Bluetooth device?"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
+                Text { text: "Confirm the PIN shown by the device or system pairing agent. Pairing is never silently authorized."; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10; wrapMode: Text.Wrap; Layout.fillWidth: true }
+                RowLayout { Text { text: "Cancel"; color: Theme.muted; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: pairConfirm.visible = false } }; Item { Layout.fillWidth: true }; Text { text: "Pair"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: { BluetoothState.run("pair", BluetoothState.selectedDevice.address); pairConfirm.visible = false } } } }
             }
         }
     }

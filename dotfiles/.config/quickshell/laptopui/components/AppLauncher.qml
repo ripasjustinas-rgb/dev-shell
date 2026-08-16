@@ -115,6 +115,7 @@ Item {
                             }
                             Keys.onDownPressed: { const count = root.matchingEntries().length; if (count) root.selectedIndex = (root.selectedIndex + 1) % count }
                             Keys.onUpPressed: { const count = root.matchingEntries().length; if (count) root.selectedIndex = (root.selectedIndex - 1 + count) % count }
+                            Keys.onTabPressed: { const count = root.matchingEntries().length; if (count) root.selectedIndex = (root.selectedIndex + 1) % count }
                         }
                         Timer { interval: 1; running: root.open; onTriggered: search.forceActiveFocus() }
                         Text { visible: !search.text.length; anchors.left: parent.left; anchors.leftMargin: 46; anchors.verticalCenter: parent.verticalCenter; text: "Search applications…"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 15 }
@@ -170,13 +171,12 @@ Item {
                         id: appList
                         visible: root.query.length > 0
                         Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 4
-                        model: DesktopEntries.applications
+                        model: root.matchingEntries()
                         delegate: Rectangle {
                             required property var modelData
-                            readonly property string haystack: (modelData.name + " " + modelData.genericName + " " + modelData.comment).toLowerCase()
-                            visible: !modelData.noDisplay && root.fuzzyMatch(haystack, root.query)
-                            width: appList.width; height: visible ? 54 : 0; radius: 10
-                            color: rowMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                            required property int index
+                            width: appList.width; height: 54; radius: 10
+                            color: index === root.selectedIndex || rowMouse.containsMouse ? Theme.surfaceHover : "transparent"
                             Behavior on height { NumberAnimation { duration: 100 } }
                             RowLayout { anchors.fill: parent; anchors.margins: 9; spacing: 12
                                 IconImage { source: Quickshell.iconPath(modelData.icon || "application-x-executable"); implicitSize: 28; Layout.preferredWidth: 28; Layout.preferredHeight: 28 }
