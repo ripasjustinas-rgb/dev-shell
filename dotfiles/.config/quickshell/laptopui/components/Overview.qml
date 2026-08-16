@@ -3,6 +3,7 @@ import Quickshell.Hyprland
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 Item {
     id: root
@@ -20,7 +21,7 @@ Item {
                     TextInput { id: search; Layout.fillWidth: true; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 14; text: root.query; onTextChanged: root.query = text.toLowerCase(); Keys.onEscapePressed: root.closeRequested(); Rectangle { z: -1; anchors.fill: parent; anchors.margins: -9; radius: Theme.radius; color: Theme.elevated } }
                     Flow { Layout.fillWidth: true; Layout.fillHeight: true; spacing: 10
                         Repeater { model: 5
-                            delegate: Rectangle { required property int index; readonly property int workspace: index + 1; readonly property var info: { for (const item of Hyprland.workspaces.values) if (item.id === workspace) return item; return null }; width: 160; height: 180; radius: Theme.radius; color: info && info.focused ? Theme.accent : Theme.surface
+                            delegate: Rectangle { required property int index; readonly property int workspace: index + 1; readonly property var info: WindowState.workspace(workspace); width: 160; height: 180; radius: Theme.radius; color: info && info.focused ? Theme.accent : Theme.surface
                                 Column { anchors.fill: parent; anchors.margins: 12; spacing: 7; Text { text: "Workspace " + parent.parent.workspace; color: parent.parent.info && parent.parent.info.focused ? Theme.background : Theme.text; font.family: Theme.fontFamily; font.bold: true }
                                     Repeater { model: parent.parent.info ? parent.parent.info.toplevels : null; delegate: Text { required property var modelData; visible: !root.query.length || (modelData.title + " " + modelData.appId).toLowerCase().includes(root.query); width: 136; text: modelData.title || modelData.appId; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10; elide: Text.ElideRight; MouseArea { anchors.fill: parent; onClicked: { Hyprland.dispatch("focuswindow address:" + modelData.address); root.closeRequested() } } } }
                                 }

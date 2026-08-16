@@ -4,6 +4,7 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 RowLayout {
     spacing: 3
@@ -14,12 +15,7 @@ RowLayout {
         Rectangle {
             required property int index
             readonly property int workspace: index + 1
-            readonly property var workspaceInfo: {
-                for (const candidate of Hyprland.workspaces.values) {
-                    if (candidate.id === workspace) return candidate
-                }
-                return null
-            }
+            readonly property var workspaceInfo: WindowState.workspace(workspace)
             readonly property bool active: workspaceInfo && workspaceInfo.focused
             readonly property bool occupied: workspaceInfo && workspaceInfo.toplevels.values.length > 0
             implicitWidth: 28

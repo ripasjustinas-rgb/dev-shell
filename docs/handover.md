@@ -20,6 +20,11 @@ Dabartinė versija apima:
 - `SUPER+A` clipboard history su tekstu ir vaizdų thumbnail per `cliphist`.
 - `SUPER+S` viso ekrano ir `SUPER+SHIFT+S` regiono screenshot'ai į
   `Pictures/Screenshots` bei clipboard.
+- capability-driven control center: desktop'e be baterijos ar backlight šie
+  valdikliai nerodomi ir nevykdo backend užklausų;
+- vieną Wi-Fi/Bluetooth connectivity popup, `SUPER+TAB` langų overview ir
+  `SUPER+SHIFT+R` command palette;
+- persistuojamą DND bei calm mode; calm mode sustabdo `cava` procesą.
 
 ## 0. Saugumo taisyklės
 
