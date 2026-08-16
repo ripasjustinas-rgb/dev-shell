@@ -76,10 +76,14 @@ PopupWindow {
                             MouseArea { anchors.fill: parent; onClicked: { if (BluetoothState.available) BluetoothState.run("power", BluetoothState.enabled ? "off" : "on"); else BluetoothState.activateService() } }
                         }
                     }
-                    ListView { Layout.fillWidth: true; Layout.preferredHeight: Math.min(contentHeight, 170); clip: true; model: BluetoothState.deviceModel
-                        delegate: Rectangle { required property var modelData; width: ListView.view.width; height: 38; radius: Theme.radius; color: deviceMouse.containsMouse ? Theme.surfaceHover : "transparent"
-                            RowLayout { anchors.fill: parent; anchors.margins: 8; Text { text: modelData.name || modelData.deviceName || modelData.address; color: modelData.connected ? Theme.accent : Theme.text; font.family: Theme.fontFamily; elide: Text.ElideRight; Layout.fillWidth: true } Text { text: modelData.pairing ? "pairing" : (modelData.connected ? "connected" : (modelData.paired ? "paired" : "new")); color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 } Text { visible: modelData.batteryAvailable; text: Math.round(modelData.battery <= 1 ? modelData.battery * 100 : modelData.battery) + "%"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 } }
-                            MouseArea { id: deviceMouse; anchors.fill: parent; hoverEnabled: true; onClicked: BluetoothState.selectedDevice = modelData }
+                    Flickable { id: bluetoothList; Layout.fillWidth: true; Layout.preferredHeight: Math.min(bluetoothDeviceColumn.height, 170); clip: true; contentWidth: width; contentHeight: bluetoothDeviceColumn.height
+                        Column { id: bluetoothDeviceColumn; width: bluetoothList.width
+                            Repeater { model: BluetoothState.devices
+                                delegate: Rectangle { required property var modelData; width: bluetoothList.width; height: 38; radius: Theme.radius; color: deviceMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                                    RowLayout { anchors.fill: parent; anchors.margins: 8; Text { text: modelData.name || modelData.deviceName || modelData.address; color: modelData.connected ? Theme.accent : Theme.text; font.family: Theme.fontFamily; elide: Text.ElideRight; Layout.fillWidth: true } Text { text: modelData.pairing ? "pairing" : (modelData.connected ? "connected" : (modelData.paired ? "paired" : "new")); color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 } Text { visible: modelData.batteryAvailable; text: Math.round(modelData.battery <= 1 ? modelData.battery * 100 : modelData.battery) + "%"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 } }
+                                    MouseArea { id: deviceMouse; anchors.fill: parent; hoverEnabled: true; onClicked: BluetoothState.selectedDevice = modelData }
+                                }
+                            }
                         }
                     }
                     Rectangle { visible: BluetoothState.selectedDevice !== null; Layout.fillWidth: true; height: 72; radius: Theme.radius; color: Theme.elevated
