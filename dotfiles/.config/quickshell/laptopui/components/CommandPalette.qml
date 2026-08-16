@@ -29,16 +29,23 @@ Item {
     function matchingActions() { const needle = query.toLowerCase(); return actions.filter(action => !needle.length || (action.title + " " + action.category).toLowerCase().includes(needle)) }
     function activate(index) { const values = matchingActions(); if (values.length) { values[Math.min(index, values.length - 1)].run(); closeRequested() } }
     Variants { model: Quickshell.screens
-        PanelWindow { required property var modelData; screen: modelData; visible: root.open; color: Theme.overlay; exclusionMode: ExclusionMode.Ignore; anchors { top: true; bottom: true; left: true; right: true }; focusable: true
-            MouseArea { anchors.fill: parent; hoverEnabled: true; onPositionChanged: mouse => { if (!SettingsState.reducedMotion) { root.parallaxX = (mouse.x / width - 0.5) * 5; root.parallaxY = (mouse.y / height - 0.5) * 5 } }; onClicked: root.closeRequested() }
+        PanelWindow { required property var modelData; screen: modelData; visible: root.open; color: Theme.overlay; exclusionMode: ExclusionMode.Ignore; anchors { top: true; bottom: true; left: true; right: true } focusable: true
+            MouseArea { anchors.fill: parent; hoverEnabled: true; onPositionChanged: mouse => { if (!SettingsState.reducedMotion) { root.parallaxX = (mouse.x / width - 0.5) * 5; root.parallaxY = (mouse.y / height - 0.5) * 5 } } onClicked: root.closeRequested() }
             Rectangle { anchors.horizontalCenter: parent.horizontalCenter; anchors.top: parent.top; anchors.topMargin: 112; width: 560; height: 430; radius: Theme.radiusLarge; color: Theme.background; border.color: Theme.border
                 transform: Translate { x: root.parallaxX; y: root.parallaxY }
                 MouseArea { anchors.fill: parent }
                 ColumnLayout { anchors.fill: parent; anchors.margins: 18; spacing: 12
-                    TextInput { id: input; Layout.fillWidth: true; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 15; text: root.query; onTextChanged: { root.query = text; root.selectedIndex = 0 }; Keys.onEscapePressed: root.closeRequested(); Keys.onReturnPressed: root.activate(root.selectedIndex); Keys.onDownPressed: { const n = root.matchingActions().length; if (n) root.selectedIndex = (root.selectedIndex + 1) % n }; Keys.onUpPressed: { const n = root.matchingActions().length; if (n) root.selectedIndex = (root.selectedIndex - 1 + n) % n }; Rectangle { z: -1; anchors.fill: parent; anchors.margins: -12; radius: Theme.radius; color: Theme.elevated } }
+                    TextInput { id: input; Layout.fillWidth: true; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 15; text: root.query
+                        onTextChanged: { root.query = text; root.selectedIndex = 0 }
+                        Keys.onEscapePressed: root.closeRequested()
+                        Keys.onReturnPressed: root.activate(root.selectedIndex)
+                        Keys.onDownPressed: { const n = root.matchingActions().length; if (n) root.selectedIndex = (root.selectedIndex + 1) % n }
+                        Keys.onUpPressed: { const n = root.matchingActions().length; if (n) root.selectedIndex = (root.selectedIndex - 1 + n) % n }
+                        Rectangle { z: -1; anchors.fill: parent; anchors.margins: -12; radius: Theme.radius; color: Theme.elevated }
+                    }
                     ListView { id: list; Layout.fillWidth: true; Layout.fillHeight: true; model: root.matchingActions(); clip: true; spacing: 4
                         delegate: Rectangle { required property var modelData; required property int index; width: list.width; height: 48; radius: Theme.radius; color: index === root.selectedIndex ? Theme.surfaceHover : Theme.surface
-                            RowLayout { anchors.fill: parent; anchors.margins: 10; Text { text: modelData.title; color: Theme.text; font.family: Theme.fontFamily; Layout.fillWidth: true }; Text { text: modelData.category; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 } }
+                            RowLayout { anchors.fill: parent; anchors.margins: 10; Text { text: modelData.title; color: Theme.text; font.family: Theme.fontFamily; Layout.fillWidth: true } Text { text: modelData.category; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 } }
                             MouseArea { anchors.fill: parent; onClicked: root.activate(index) }
                         }
                     }
