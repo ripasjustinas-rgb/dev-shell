@@ -129,7 +129,7 @@ value 'Desktop' "${XDG_CURRENT_DESKTOP:-unset}"
 for unit in NetworkManager.service bluetooth.service; do
   value "$unit" "$(systemctl is-active "$unit" 2>/dev/null || true)"
 done
-for unit in pipewire.service wireplumber.service xdg-desktop-portal-hyprland.service; do
+for unit in pipewire.service wireplumber.service xdg-desktop-portal-hyprland.service laptopui-clipboard.service; do
   value "$unit (user)" "$(systemctl --user is-active "$unit" 2>/dev/null || true)"
 done
 

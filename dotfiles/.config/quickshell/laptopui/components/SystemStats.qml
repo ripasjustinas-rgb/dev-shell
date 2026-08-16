@@ -1,3 +1,4 @@
+import Quickshell
 import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
@@ -29,7 +30,7 @@ Item {
                 Layout.preferredWidth: 70
                 Layout.fillHeight: true
                 radius: Theme.radius
-                color: Theme.surface
+                color: statsMouse.containsMouse ? Theme.surfaceHover : Theme.surface
                 border.width: 1
                 border.color: Theme.glassBorder
 
@@ -60,6 +61,13 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
+                }
+
+                MouseArea {
+                    id: statsMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: Quickshell.execDetached(["kitty", "btop"])
                 }
             }
         }

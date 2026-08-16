@@ -154,6 +154,12 @@ Rankiniu būdu patikrink:
 - visi monitoriai turi teisingą poziciją, refresh rate ir scale;
 - monitoriaus atjungimas nesukuria panelės dublikatų;
 - launcher, tray, notification center ir power meniu;
+- `SUPER+A` clipboard istorija: tekstas ir vaizdai atsiranda po nukopijavimo,
+  vaizdams rodomas thumbnail, paspaudimas grąžina pasirinktą įrašą, o „Clear“
+  išvalo istoriją;
+- CPU ir RAM rodmenų paspaudimai atidaro Kitty su veikiančiu `btop`;
+- `SUPER+S` sukuria visų ekranų PNG, `SUPER+SHIFT+S` leidžia pasirinkti regioną;
+  failas turi būti `Pictures/Screenshots`, clipboard ir `SUPER+A` thumbnail;
 - garsas, mikrofonas, MPRIS ir `cava` vizualizacija;
 - dinaminė `matugen` paletė pakeitus wallpaperį;
 - `balanced ↔ performance` keičia realią CPU politiką;

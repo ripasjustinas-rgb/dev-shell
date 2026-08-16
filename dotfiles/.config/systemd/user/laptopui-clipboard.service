@@ -1,0 +1,10 @@
+[Unit]
+Description=LaptopUI clipboard history watcher
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/laptopui-clipboard-watch
+Restart=on-failure
+RestartSec=2

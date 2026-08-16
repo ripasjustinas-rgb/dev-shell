@@ -27,6 +27,8 @@ konfigūraciją.
 - PipeWire/WirePlumber, NetworkManager, BlueZ ir UPower;
 - launcher, notification, clipboard, screenshot ir lock/idle įrankius;
 - `cava` media vizualizacijai;
+- `btop` CPU, atminties ir procesų stebėjimui, kurį atidaro panelės CPU/RAM
+  rodmenys;
 - `matugen` ir `jq` dinaminei Quickshell, Hyprland ir Kitty wallpaper paletei;
 - Nerd Font ir emoji fontą.
 - `zsh`, `starship`, autosuggestions ir syntax-highlighting interaktyviam shell.
@@ -41,6 +43,45 @@ Profilio manifestas pridedamas atskirai:
 
 Paketų komanda yra vienintelė diegimo dalis, kuri kviečia `sudo pacman`. Ji
 nelinkina konfigūracijų ir neįjungia servisų.
+
+Clipboard istorijai naudojami bendrame manifeste esantys `wl-clipboard`
+(`wl-copy`, `wl-paste`) ir `cliphist`. Įdiegus dotfiles, `laptopui-clipboard`
+user service automatiškai stebi Wayland tekstą ir vaizdus; jis startuoja su
+Hyprland ir jokio sisteminio `sudo systemctl enable` nereikalauja. Control
+center vaizdinius įrašus dekoduoja į vartotojo runtime cache ir rodo thumbnail,
+todėl `laptopui-clipboard-preview` turi likti susietas į `~/.local/bin`.
+
+Screenshot funkcijai naudojami `grim` ir `slurp`, taip pat jau esantys tame
+pačiame manifeste. `SUPER+S` užfiksuoja visus ekranus, o `SUPER+SHIFT+S`
+leidžia pažymėti regioną. Abu variantai PNG įrašo į
+`Pictures/Screenshots` (ar vartotojo lokalizuotą Pictures katalogą), kopijuoja
+vaizdą į Wayland clipboard ir todėl jis iškart atsiranda control center
+istorijoje.
+
+`dotfiles/.config/btop/btop.conf` nustato `theme_background = false`, kad
+panelės paleistas `btop` naudotų skaidrų Kitty lango foną ir blur, o ne savo
+nepermatomą foną. Diegiklis šį katalogą susieja su `~/.config/btop`.
+
+## Orų kalendorius
+
+Centrinio panelės datos/orų bloko paspaudimas atidaro kalendorių su penkių
+dienų prognoze. Dabartines sąlygas gauna `laptopui-weather` iš `wttr.in`, o
+prognozę — iš Open-Meteo geocoding ir forecast API. Reikalingi `curl`, `jq` ir
+veikiantis interneto ryšys; abu įrankiai jau išvardyti
+`packages/arch-common.txt`.
+
+`install` susieja `laptopui-weather` su `~/.local/bin/laptopui-weather` kartu
+su visa Quickshell `laptopui` konfigūracija. Papildomo systemd serviso ar API
+rakto nereikia. Jei prognozė rodoma kaip unavailable, pirmiausia patikrink DNS
+ir interneto ryšį:
+
+```sh
+curl -fsS --max-time 8 'https://api.open-meteo.com/v1/forecast?latitude=54.6872&longitude=25.2797&daily=weather_code&forecast_days=5' >/dev/null
+~/.local/bin/laptopui-weather --forecast
+```
+
+Vietą galima pakeisti prieš Quickshell paleidimą nustatant
+`LAPTOPUI_WEATHER_LOCATION`, pavyzdžiui `LAPTOPUI_WEATHER_LOCATION=Kaunas`.
 
 ## Reikalingi servisai
 

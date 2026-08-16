@@ -12,6 +12,7 @@ Item {
     property string weatherDescription: "Weather unavailable"
     implicitWidth: weatherRow.implicitWidth
     implicitHeight: Theme.panelContentHeight - 4
+    signal clicked()
 
     function refreshWeather() {
         if (!weather.running)
@@ -72,6 +73,13 @@ Item {
                 font.pixelSize: 9
             }
         }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.clicked()
     }
 
     SystemClock { id: clock }

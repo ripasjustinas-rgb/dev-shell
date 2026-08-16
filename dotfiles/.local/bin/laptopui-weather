@@ -5,6 +5,45 @@ location=${LAPTOPUI_WEATHER_LOCATION:-Vilnius}
 command -v curl >/dev/null 2>&1 || exit 0
 command -v jq >/dev/null 2>&1 || exit 0
 
+if [ "${1:-}" = "--forecast" ]; then
+  place=$(curl --connect-timeout 3 --max-time 8 -fsSL -G \
+    --data-urlencode "name=${location}" \
+    'https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json') || exit 0
+  coordinates=$(printf '%s' "$place" | jq -er '.results[0] | [.latitude, .longitude] | @tsv') || exit 0
+  set -- $coordinates
+  payload=$(curl --connect-timeout 3 --max-time 8 -fsSL -G \
+    --data-urlencode "latitude=$1" \
+    --data-urlencode "longitude=$2" \
+    --data-urlencode 'daily=weather_code,temperature_2m_max,temperature_2m_min' \
+    --data-urlencode 'forecast_days=5' \
+    --data-urlencode 'timezone=auto' \
+    'https://api.open-meteo.com/v1/forecast') || exit 0
+  printf '%s' "$payload" | jq -cer '
+    [. as $forecast
+      | $forecast.daily.time as $days
+      | range(0; $days | length) as $index
+      | {
+          date: $days[$index],
+          min: $forecast.daily.temperature_2m_min[$index],
+          max: $forecast.daily.temperature_2m_max[$index],
+          code: $forecast.daily.weather_code[$index],
+          description: (
+            $forecast.daily.weather_code[$index] as $code
+            | if $code == 0 then "Clear sky"
+              elif $code <= 2 then "Partly cloudy"
+              elif $code == 3 then "Overcast"
+              elif $code <= 48 then "Foggy"
+              elif $code <= 67 then "Rain"
+              elif $code <= 77 then "Snow"
+              elif $code <= 82 then "Rain showers"
+              elif $code <= 86 then "Snow showers"
+              else "Thunderstorm" end
+          )
+        }]
+  ' 2>/dev/null || true
+  exit 0
+fi
+
 payload=$(curl --connect-timeout 3 --max-time 8 -fsSL \
   "https://wttr.in/${location}?format=j1") || exit 0
 

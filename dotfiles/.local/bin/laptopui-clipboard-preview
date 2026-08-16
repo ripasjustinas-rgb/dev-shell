@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+entry_id=${1:-}
+[[ "$entry_id" =~ ^[0-9]+$ ]] || exit 2
+
+runtime_dir=${XDG_RUNTIME_DIR:-"/tmp/laptopui-${USER:-$(id -u)}"}
+cache_dir="$runtime_dir/laptopui-clipboard"
+target="$cache_dir/$entry_id.png"
+
+mkdir -p -- "$cache_dir"
+temporary=$(mktemp "$cache_dir/.${entry_id}.XXXXXX")
+trap 'rm -f -- "$temporary"' EXIT
+
+cliphist decode "$entry_id" > "$temporary"
+mv -f -- "$temporary" "$target"
+trap - EXIT

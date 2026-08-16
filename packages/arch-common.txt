@@ -44,5 +44,6 @@ zsh-syntax-highlighting
 
 # Current fallback applications
 kitty
+btop
 dolphin
 waybar

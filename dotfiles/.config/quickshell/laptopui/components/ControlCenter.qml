@@ -13,6 +13,15 @@ Item {
     property string sourceVolume: "—"
     property string brightness: "—"
     property string profile: "balanced"
+    property real clipboardHeight: 0
+    property real sinkLevel: 0
+    property real sourceLevel: 0
+    property real brightnessLevel: 0
+    property bool sinkMuted: false
+    property bool sourceMuted: false
+    property string pendingVolumeTarget: ""
+    property real pendingVolumeLevel: 0
+    property real pendingBrightnessLevel: 0
 
     function refresh() {
         sinkQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
@@ -20,14 +29,39 @@ Item {
         brightnessQuery.exec(["brightnessctl", "-m"])
         profileQuery.exec(["powerprofilesctl", "get"])
     }
-    function volume(target, amount) { Quickshell.execDetached(["wpctl", "set-volume", target, amount]); delayedRefresh.restart() }
+    function parseVolume(text, microphone) {
+        const match = text.match(/Volume:\s+([0-9.]+)(\s+\[MUTED\])?/)
+        const level = match ? Math.round(Number(match[1]) * 100) : 0
+        const value = match ? level + "%" : "—"
+        const muted = match ? Boolean(match[2]) : false
+        if (microphone) {
+            sourceVolume = value
+            sourceLevel = level
+            sourceMuted = muted
+        } else {
+            sinkVolume = value
+            sinkLevel = level
+            sinkMuted = muted
+        }
+    }
+    function queueVolume(target, level) {
+        pendingVolumeTarget = target
+        pendingVolumeLevel = level
+        volumeApply.restart()
+    }
+    function queueBrightness(level) {
+        pendingBrightnessLevel = level
+        brightnessApply.restart()
+    }
     function mute(target) { Quickshell.execDetached(["wpctl", "set-mute", target, "toggle"]); delayedRefresh.restart() }
-    function setBrightness(amount) { Quickshell.execDetached(["brightnessctl", "set", amount]); delayedRefresh.restart() }
+    function setBrightness(level) { Quickshell.execDetached(["brightnessctl", "set", Math.round(level) + "%"]); delayedRefresh.restart() }
 
-    Process { id: sinkQuery; stdout: StdioCollector { onStreamFinished: { const m = text.match(/Volume:\s+([0-9.]+)/); root.sinkVolume = m ? Math.round(Number(m[1]) * 100) + "%" : "—" } } }
-    Process { id: sourceQuery; stdout: StdioCollector { onStreamFinished: { const m = text.match(/Volume:\s+([0-9.]+)/); root.sourceVolume = m ? Math.round(Number(m[1]) * 100) + "%" : "—" } } }
-    Process { id: brightnessQuery; stdout: StdioCollector { onStreamFinished: { const p = text.trim().split(","); root.brightness = p.length > 3 ? p[3].trim() : "—" } } }
+    Process { id: sinkQuery; stdout: StdioCollector { onStreamFinished: root.parseVolume(text, false) } }
+    Process { id: sourceQuery; stdout: StdioCollector { onStreamFinished: root.parseVolume(text, true) } }
+    Process { id: brightnessQuery; stdout: StdioCollector { onStreamFinished: { const p = text.trim().split(","); root.brightness = p.length > 3 ? p[3].trim() : "—"; root.brightnessLevel = p.length > 3 ? Number.parseFloat(p[3]) : 0 } } }
     Process { id: profileQuery; stdout: StdioCollector { onStreamFinished: { if (text.trim().length) root.profile = text.trim() } } }
+    Timer { id: volumeApply; interval: 70; onTriggered: { Quickshell.execDetached(["wpctl", "set-volume", root.pendingVolumeTarget, Math.round(root.pendingVolumeLevel) + "%"]); delayedRefresh.restart() } }
+    Timer { id: brightnessApply; interval: 70; onTriggered: root.setBrightness(root.pendingBrightnessLevel) }
     Timer { id: delayedRefresh; interval: 180; onTriggered: root.refresh() }
 
     Variants {
@@ -45,7 +79,10 @@ Item {
             Rectangle {
                 id: card
                 width: 390
-                height: 470
+                height: Math.min(
+                    parent.height - Theme.panelHeight - 28,
+                    Math.max(390, 365 + root.clipboardHeight)
+                )
                 anchors.top: parent.top
                 anchors.right: parent.right
                 anchors.topMargin: Theme.panelHeight + 14
@@ -74,9 +111,9 @@ Item {
                             MouseArea { anchors.fill: parent; onClicked: root.closeRequested() } }
                     }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
-                    ControlRow { icon: "󰕾"; title: "Volume"; value: root.sinkVolume; onDecrease: root.volume("@DEFAULT_AUDIO_SINK@", "5%-"); onIncrease: root.volume("@DEFAULT_AUDIO_SINK@", "5%+"); onToggle: root.mute("@DEFAULT_AUDIO_SINK@") }
-                    ControlRow { icon: "󰍬"; title: "Microphone"; value: root.sourceVolume; onDecrease: root.volume("@DEFAULT_AUDIO_SOURCE@", "5%-"); onIncrease: root.volume("@DEFAULT_AUDIO_SOURCE@", "5%+"); onToggle: root.mute("@DEFAULT_AUDIO_SOURCE@") }
-                    ControlRow { icon: "󰃠"; title: "Brightness"; value: root.brightness; onDecrease: root.setBrightness("5%-"); onIncrease: root.setBrightness("5%+"); onToggle: root.setBrightness("50%") }
+                    ControlRow { icon: root.sinkMuted ? "󰖁" : "󰕾"; title: "Volume"; value: root.sinkVolume; level: root.sinkLevel; muted: root.sinkMuted; muteAvailable: true; muteIcon: root.sinkMuted ? "󰖁" : "󰕾"; deviceSelectionAvailable: true; onLevelRequested: level => root.queueVolume("@DEFAULT_AUDIO_SINK@", level); onMuteRequested: root.mute("@DEFAULT_AUDIO_SINK@"); onDeviceSelectionChanged: delayedRefresh.restart() }
+                    ControlRow { icon: root.sourceMuted ? "󰍭" : "󰍬"; title: "Microphone"; value: root.sourceVolume; level: root.sourceLevel; muted: root.sourceMuted; muteAvailable: true; muteIcon: root.sourceMuted ? "󰍭" : "󰍬"; deviceSelectionAvailable: true; microphone: true; onLevelRequested: level => root.queueVolume("@DEFAULT_AUDIO_SOURCE@", level); onMuteRequested: root.mute("@DEFAULT_AUDIO_SOURCE@"); onDeviceSelectionChanged: delayedRefresh.restart() }
+                    ControlRow { icon: "󰃠"; title: "Brightness"; value: root.brightness; level: root.brightnessLevel; onLevelRequested: level => root.queueBrightness(level) }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
                     RowLayout {
                         Layout.fillWidth: true
@@ -84,8 +121,11 @@ Item {
                         QuickToggle { icon: "󰂄"; label: root.profile; active: root.profile === "performance"; onClicked: profilePopup.open = !profilePopup.open }
                         QuickToggle { icon: "󰏤"; label: "Notifications"; active: false; onClicked: { root.closeRequested(); Quickshell.execDetached(["qs", "-c", "laptopui", "ipc", "call", "laptopui", "toggleNotifications"]) } }
                     }
-                    Item { Layout.fillHeight: true }
-                    Text { text: "Connected devices and controls update live"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 11 }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
+                    ClipboardHistory {
+                        id: clipboardHistory
+                        onImplicitHeightChanged: root.clipboardHeight = implicitHeight
+                    }
                 }
 
                 Rectangle {
@@ -103,7 +143,10 @@ Item {
                     }
                 }
             }
-            onVisibleChanged: if (visible) root.refresh()
+            onVisibleChanged: if (visible) {
+                root.refresh()
+                clipboardHistory.refresh()
+            }
         }
     }
 }

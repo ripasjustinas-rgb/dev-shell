@@ -23,6 +23,12 @@ Item {
     function entries(ids) {
         return ids.map(id => resolveEntry(id)).filter(entry => entry !== null)
     }
+    function matchingEntries() {
+        return DesktopEntries.applications.values.filter(entry => {
+            const haystack = (entry.name + " " + entry.genericName + " " + entry.comment).toLowerCase()
+            return !entry.noDisplay && haystack.includes(query)
+        })
+    }
     function remember(entry) {
         recentIds = [entry.id, ...recentIds.filter(id => id !== entry.id)].slice(0, 4)
     }
@@ -71,7 +77,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.topMargin: 112
-                width: 620; height: 458; radius: 20
+                width: 620; height: 510; radius: 20
                 color: Theme.background; border.color: Theme.border; border.width: 1
                 opacity: root.open ? 1 : 0
                 scale: root.open ? 1 : 0.96
@@ -91,6 +97,10 @@ Item {
                             text: root.searchText
                             onTextChanged: { root.searchText = text; root.query = text.toLowerCase() }
                             Keys.onEscapePressed: root.closeRequested()
+                            Keys.onReturnPressed: {
+                                const matches = root.matchingEntries()
+                                if (root.query.length && matches.length === 1) root.launch(matches[0])
+                            }
                         }
                         Timer { interval: 1; running: root.open; onTriggered: search.forceActiveFocus() }
                         Text { visible: !search.text.length; anchors.left: parent.left; anchors.leftMargin: 46; anchors.verticalCenter: parent.verticalCenter; text: "Search applications…"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 15 }
@@ -101,19 +111,41 @@ Item {
                         visible: !root.query.length
                         ColumnLayout {
                             anchors.fill: parent; spacing: 12
-                            Text { text: "Recent"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 11 }
-                            RowLayout {
-                                Layout.fillWidth: true; spacing: 8
-                                Repeater { model: root.entries(root.recentIds)
-                                    delegate: LauncherTile { required property var modelData; entry: modelData; pinned: true; onActivated: root.launch(entry); onTogglePin: root.togglePin(entry) }
-                                }
-                            }
-                            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
                             Text { text: "Pinned"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 11 }
                             RowLayout {
                                 Layout.fillWidth: true; spacing: 8
                                 Repeater { model: root.entries(root.pinnedIds)
-                                    delegate: LauncherTile { required property var modelData; entry: modelData; onActivated: root.launch(entry) }
+                                    delegate: LauncherTile { required property var modelData; entry: modelData; pinned: true; onActivated: root.launch(entry); onTogglePin: root.togglePin(entry) }
+                                }
+                            }
+                            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
+                            Text { text: "Recent"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 11 }
+                            ListView {
+                                id: recentList
+                                Layout.fillWidth: true; spacing: 8
+                                Layout.preferredHeight: Math.min(contentHeight, 4 * 52)
+                                clip: true
+                                model: root.entries(root.recentIds)
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    width: recentList.width; height: 48; radius: 10
+                                    color: recentMouse.containsMouse ? Theme.surfaceHover : Theme.surface
+                                    RowLayout {
+                                        anchors.fill: parent; anchors.margins: 10; spacing: 12
+                                        IconImage { source: Quickshell.iconPath(modelData.icon || "application-x-executable"); implicitSize: 26; Layout.preferredWidth: 26; Layout.preferredHeight: 26 }
+                                        ColumnLayout { Layout.fillWidth: true; spacing: 1
+                                            Text { text: modelData.name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 13; elide: Text.ElideRight; Layout.fillWidth: true }
+                                            Text { text: modelData.genericName || modelData.comment; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10; elide: Text.ElideRight; Layout.fillWidth: true }
+                                        }
+                                    }
+                                    MouseArea {
+                                        id: recentMouse; anchors.fill: parent; hoverEnabled: true
+                                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                        onClicked: mouse => {
+                                            if (mouse.button === Qt.RightButton) root.togglePin(modelData)
+                                            else root.launch(modelData)
+                                        }
+                                    }
                                 }
                             }
                             Item { Layout.fillHeight: true }

@@ -9,12 +9,17 @@ Dabartinė versija apima:
 - Hyprland ir Quickshell `laptopui` su high-rice stiklo/glow estetika;
 - dinaminę desktop wallpaperio `matugen` paletę Quickshell, Hyprland ir Kitty;
 - MPRIS media kortelę, `cava` vizualizaciją ir bass bangos efektą;
-- CPU/RAM, performance profilius, orus, update counterį ir terminalo updaterį;
+- CPU/RAM rodmenis, kurių paspaudimas atidaro `btop`, performance profilius,
+  orus, update counterį ir terminalo updaterį; centrinį paspaudžiamą
+  kalendorių su penkių dienų Open-Meteo prognoze;
 - Kitty, Zsh, Oh My Zsh ir Starship;
 - fiksuotą, atskirai previewinamą LaptopUI SDDM temą;
 - tokį pat SDDM stilių atkartojantį `hyprlock`;
 - `hypridle`: 5 min. lock, 10 min. DPMS off, 20 min. suspend;
 - laptopo lid eigą: ekranas off iškart, suspend po 5 min., atidarius atšaukiama.
+- `SUPER+A` clipboard history su tekstu ir vaizdų thumbnail per `cliphist`.
+- `SUPER+S` viso ekrano ir `SUPER+SHIFT+S` regiono screenshot'ai į
+  `Pictures/Screenshots` bei clipboard.
 
 ## 0. Saugumo taisyklės
 
@@ -79,8 +84,15 @@ Jei monitoriaus output arba režimas skiriasi, prieš diegimą pataisyk
 ```
 
 Manifestas įdiegia `nvidia-open`, `nvidia-utils`, `egl-wayland`, XWayland,
-SDDM, Qt5 Quick Controls, Hyprland, Quickshell, hyprlock, hypridle ir visus UI
-helperių paketus.
+SDDM, Qt5 Quick Controls, Hyprland, Quickshell, hyprlock, hypridle, `cliphist`,
+`wl-clipboard`, `grim`, `slurp`, `btop` ir visus UI helperių paketus.
+`curl` ir `jq` taip pat yra bendrame manifeste: jie reikalingi dabartiniams
+orams ir penkių dienų Open-Meteo prognozei. Prognozė nereikalauja API rakto,
+tačiau jai būtinas veikiantis DNS ir interneto ryšys.
+
+CPU arba RAM rodmuo atidaro `kitty btop`. Valdoma `btop` konfigūracija palieka
+jo foną skaidrų, todėl matomas tas pats Kitty wallpaper blur ir spalvinis
+kontekstas, o ne atskiras juodas blokas.
 
 Įjunk reikalingus sisteminius servisus:
 
@@ -177,8 +189,8 @@ starto metu:
 - parenkamas random desktop wallpaperis;
 - prieš pirmą Quickshell kadrą sugeneruojama jo `matugen` paletė;
 - paleidžiamas vienas `qs --no-duplicate --config laptopui` procesas;
-- per `systemd --user` paleidžiami `laptopui-hypridle.service` ir
-  `laptopui-lid-inhibit.service`.
+- per `systemd --user` paleidžiami `laptopui-hypridle.service`,
+  `laptopui-lid-inhibit.service` ir `laptopui-clipboard.service`.
 
 Patikrink:
 
@@ -188,9 +200,17 @@ hyprctl monitors
 qs -c laptopui ipc show
 systemctl --user daemon-reload
 systemctl --user start \
-  laptopui-hypridle.service laptopui-lid-inhibit.service
+  laptopui-hypridle.service laptopui-lid-inhibit.service laptopui-clipboard.service
 systemctl --user status \
-  laptopui-hypridle.service laptopui-lid-inhibit.service
+  laptopui-hypridle.service laptopui-lid-inhibit.service laptopui-clipboard.service
+```
+
+Patikrink centrinį panelės valdiklį: paspaudus datą ir orus turi atsidaryti
+kalendorius su mėnesio navigacija bei penkiomis prognozės eilutėmis. Jei vietoj
+jų rodoma unavailable, patikrink helperį ir ryšį:
+
+```sh
+~/.local/bin/laptopui-weather --forecast
 ```
 
 Desktop neturi lid įrenginio, todėl lid bind'ai ir inhibitorius kasdieniam
@@ -294,9 +314,16 @@ Rankiniu būdu patikrink:
 - `DP-3` veikia 2560×1440@180 Hz, scale 1;
 - nėra panelės ar Quickshell procesų dublikatų;
 - launcher, notifications, tray, control center ir power dialogas;
+- `SUPER+A` clipboard istorija: nukopijuotas tekstas ir vaizdas pasirodo
+  sąraše, vaizdas turi thumbnail preview, paspaudus jie grąžinami į clipboard,
+  o „Clear“ išvalo istoriją;
+- `SUPER+S` išsaugo visų ekranų PNG, `SUPER+SHIFT+S` leidžia pažymėti regioną;
+  abu failai yra `Pictures/Screenshots`, nukopijuojami į clipboard ir rodomi
+  control center thumbnail;
 - audio/mic/brightness OSD;
 - MPRIS media valdymas, `cava`, peak burst ir bass banga;
-- CPU/RAM ikonų geometrija ir performance profilio realus poveikis;
+- CPU/RAM ikonų geometrija, jų paspaudimu Kitty atsidarantis `btop` ir
+  performance profilio realus poveikis;
 - orų ikona, temperatūra, data ir location centravimas;
 - update counteris nerodo nulio, o updateris atidaro ASCII terminalą;
 - wallpaperio pakeitimas gyvai atnaujina Quickshell, Hyprland ir Kitty spalvas;

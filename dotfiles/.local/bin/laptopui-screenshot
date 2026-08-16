@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+usage() {
+  printf 'Usage: %s <full|region>\n' "${0##*/}" >&2
+  exit 2
+}
+
+mode=${1:-}
+[[ $# -eq 1 && ( "$mode" == full || "$mode" == region ) ]] || usage
+
+# xdg-user-dir respects a user's localized Pictures directory. Fall back to
+# the conventional path when xdg-user-dirs has not been configured yet.
+pictures_dir=$(xdg-user-dir PICTURES 2>/dev/null || true)
+[[ -n "$pictures_dir" && "$pictures_dir" != "$HOME" ]] || pictures_dir="$HOME/Pictures"
+target_dir="$pictures_dir/Screenshots"
+timestamp=$(date '+%Y-%m-%d_%H-%M-%S')
+target="$target_dir/Screenshot_${timestamp}.png"
+
+mkdir -p -- "$target_dir"
+
+case "$mode" in
+  full)
+    grim "$target"
+    label="Full screen screenshot"
+    ;;
+  region)
+    geometry=$(slurp) || exit 0
+    [[ -n "$geometry" ]] || exit 0
+    grim -g "$geometry" "$target"
+    label="Region screenshot"
+    ;;
+esac
+
+wl-copy --type image/png < "$target"
+notify-send --app-name='LaptopUI' --icon="$target" "$label saved" 'Copied to clipboard'
+printf '%s\n' "$target"

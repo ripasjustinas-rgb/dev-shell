@@ -73,8 +73,7 @@ SystemTray ir Notifications API. Trumpi išoriniai procesai (`brightnessctl`,
 
 - media/MPRIS kortelė;
 - kalendorius;
-- clipboard history UI su `cliphist`;
-- screenshot region/window/fullscreen eiga;
+- screenshot window eiga;
 - išplėstas wallpaper picker'is;
 - window/workspace overview, jeigu jis duoda daugiau vertės nei launcher'is.
 
@@ -84,12 +83,15 @@ SystemTray ir Notifications API. Trumpi išoriniai procesai (`brightnessctl`,
 - panelės audio popup ir bendras animuotas control center;
 - volume, microphone ir brightness OSD per multimedia bind'us;
 - Quickshell notification serveris, toast'ai, istorija ir DND;
+- `SUPER+S` ir `SUPER+SHIFT+S` screenshot'ai: visas ekranas arba pažymėtas
+  regionas išsaugomas `Pictures/Screenshots` ir nukopijuojamas į clipboard;
 - Quickshell desktop-entry launcher'is bei power dialogas su patvirtinimu;
 - `mako.service` išjungtas, o Wofi nebenaudojamas aktyviuose keliuose.
 - iš `NerdMini_shell` pritaikytas „high rice“ stiklo/glow stilius ir spring
   Hyprland animacijos;
 - MPRIS media kortelė ir `cava` spektro vizualizacija panelės centre;
-- gyvi CPU/RAM rodmenys ir saugus `powerprofilesctl` performance valdiklis;
+- gyvi CPU/RAM rodmenys, kurių paspaudimas atidaro `btop`, ir saugus
+  `powerprofilesctl` performance valdiklis;
 - automatinė `matugen` Material You paletė iš aktyvaus wallpaper'io, gyvai
   pritaikoma Quickshell, Hyprland ir Kitty spalvoms;
 - „high rice“ Kitty tema su permatomu fonu, Nerd Font, kompaktišku tab bar ir
@@ -109,7 +111,9 @@ SystemTray ir Notifications API. Trumpi išoriniai procesai (`brightnessctl`,
   display manager perkrovimo;
 - SDDM stilių atkartojantis `hyprlock`, `SUPER+L`, 5/10/20 min. lock/DPMS/
   suspend eiga ir atskiras lid-close 5 min. suspend timeris;
-- clipboard istorijos perkėlimas sąmoningai atidėtas vėlesniam etapui.
+- `cliphist` clipboard istorija `SUPER+A` control center: dinaminis iki aštuonių
+  įrašų sąrašas, pasirinkimo nukopijavimas, išvalymas ir Wayland tekstų bei
+  vaizdų stebėjimas per vartotojo servisą.
 
 ## Laptopo ir desktopo profiliai
 

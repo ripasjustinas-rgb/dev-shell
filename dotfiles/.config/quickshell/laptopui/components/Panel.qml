@@ -257,7 +257,10 @@ Item {
                         burstLevel: root.beatBurst
                     }
 
-                    ClockWeather {}
+                    ClockWeather {
+                        id: clockWeather
+                        onClicked: calendarWeather.visible = !calendarWeather.visible
+                    }
 
                     MediaPill { player: root.activeMediaPlayer }
 
@@ -266,6 +269,12 @@ Item {
                         spectrumData: root.spectrumData
                         burstLevel: root.beatBurst
                     }
+                }
+
+                CalendarWeather {
+                    id: calendarWeather
+                    anchorItem: clockWeather
+                    location: clockWeather.location
                 }
 
                 Rectangle {

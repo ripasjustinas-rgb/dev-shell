@@ -62,11 +62,13 @@ emit_package_list() {
 manifest() {
   printf '%s\t%s\n' \
     "$repo_dir/dotfiles/.config/hypr" "$home_dir/.config/hypr" \
+    "$repo_dir/dotfiles/.config/btop" "$home_dir/.config/btop" \
     "$repo_dir/dotfiles/.config/kitty" "$home_dir/.config/kitty" \
     "$repo_dir/dotfiles/.config/quickshell/laptopui" "$home_dir/.config/quickshell/laptopui" \
     "$repo_dir/dotfiles/.config/starship.toml" "$home_dir/.config/starship.toml" \
     "$repo_dir/dotfiles/.config/systemd/user/laptopui-hypridle.service" "$home_dir/.config/systemd/user/laptopui-hypridle.service" \
     "$repo_dir/dotfiles/.config/systemd/user/laptopui-lid-inhibit.service" "$home_dir/.config/systemd/user/laptopui-lid-inhibit.service" \
+    "$repo_dir/dotfiles/.config/systemd/user/laptopui-clipboard.service" "$home_dir/.config/systemd/user/laptopui-clipboard.service" \
     "$repo_dir/dotfiles/.config/waybar" "$home_dir/.config/waybar" \
     "$repo_dir/dotfiles/.zprofile" "$home_dir/.zprofile" \
     "$repo_dir/dotfiles/.zshrc" "$home_dir/.zshrc" \
@@ -82,6 +84,9 @@ manifest() {
     "$repo_dir/dotfiles/.local/bin/laptopui-theme-generate" "$home_dir/.local/bin/laptopui-theme-generate" \
     "$repo_dir/dotfiles/.local/bin/laptopui-apply-hypr-theme" "$home_dir/.local/bin/laptopui-apply-hypr-theme" \
     "$repo_dir/dotfiles/.local/bin/laptopui-launcher-pin" "$home_dir/.local/bin/laptopui-launcher-pin" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-clipboard-watch" "$home_dir/.local/bin/laptopui-clipboard-watch" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-clipboard-preview" "$home_dir/.local/bin/laptopui-clipboard-preview" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-screenshot" "$home_dir/.local/bin/laptopui-screenshot" \
     "$repo_dir/dotfiles/.local/bin/laptopui-lock" "$home_dir/.local/bin/laptopui-lock" \
     "$repo_dir/dotfiles/.local/bin/laptopui-lid" "$home_dir/.local/bin/laptopui-lid" \
     "$repo_dir/dotfiles/.local/bin/laptopui-wallpaper-next" "$home_dir/.local/bin/laptopui-wallpaper-next" \
@@ -164,6 +169,7 @@ install() {
     mkdir -p -- "$state_dir"
     printf '%s\n' "$profile" > "$active_profile_file"
     printf '%s\n' "$profile" > "$backup_dir/profile"
+    refresh_clipboard_watcher
     note "backup id: $backup_id"
     note "active profile: $profile"
   else
@@ -178,6 +184,16 @@ packages() {
   run sudo pacman --needed -S "${packages_to_install[@]}"
 }
 
+refresh_clipboard_watcher() {
+  command -v systemctl >/dev/null 2>&1 || return 0
+  systemctl --user daemon-reload >/dev/null 2>&1 || {
+    note 'warning: could not reload user systemd; clipboard watcher starts with the next Hyprland session'
+    return 0
+  }
+  systemctl --user restart laptopui-clipboard.service >/dev/null 2>&1 || \
+    note 'warning: could not start clipboard watcher; it starts with the next Hyprland session'
+}
+
 status() {
   local source target state
   while IFS=$'\t' read -r source target; do
@@ -187,6 +203,25 @@ status() {
     printf '%-10s %s\n' "$state" "$target"
   done < <(manifest)
   printf 'quickshell: '; command -v qs >/dev/null && qs --version || printf 'not installed\n'
+  printf 'btop: '; command -v btop >/dev/null && printf 'available\n' || printf 'not installed (run packages)\n'
+  printf 'weather forecast helper: '
+  if [[ -x "$home_dir/.local/bin/laptopui-weather" ]] && command -v curl >/dev/null && command -v jq >/dev/null; then
+    printf 'ready (requires internet when opened)\n'
+  else
+    printf 'missing helper, curl, or jq (run install and packages)\n'
+  fi
+  printf 'clipboard watcher: '
+  if command -v systemctl >/dev/null && clipboard_state=$(systemctl --user is-active laptopui-clipboard.service 2>/dev/null); then
+    printf '%s\n' "$clipboard_state"
+  else
+    printf 'inactive or unavailable\n'
+  fi
+  printf 'screenshot helpers: '
+  if [[ -x "$home_dir/.local/bin/laptopui-screenshot" && -x "$home_dir/.local/bin/laptopui-clipboard-preview" ]]; then
+    printf 'ready\n'
+  else
+    printf 'missing (run install)\n'
+  fi
   printf 'active profile: '; [[ -f "$active_profile_file" ]] && sed -n '1p' "$active_profile_file" || printf 'not selected\n'
   printf 'backups: '; [[ -d "$backup_root" ]] && find "$backup_root" -mindepth 1 -maxdepth 1 -type d -printf '%f ' | sort || true; printf '\n'
 }

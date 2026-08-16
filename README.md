@@ -23,12 +23,24 @@ Waybar konfigūracija išlaikoma tik kaip avarinis fallback. Aktyvus shell yra
 Quickshell `laptopui`: panelė, wallpaper, launcher, control center,
 notifications, OSD ir power dialogai veikia be Wofi. Panelė taip pat turi
 MPRIS media kortelę, `cava` garso spektro vizualizaciją, CPU/RAM rodmenis ir
-energijos profilio valdiklį. Centrinis datos ir vietos blokas papildytas didele
+energijos profilio valdiklį. Paspaudus CPU arba RAM rodmenį atidaromas Kitty
+terminalas su `btop`. Centrinis datos ir vietos blokas papildytas didele
 Nerd Font orų ikona kairėje, kuri skiria dieną, naktį, debesis, rūką,
 kritulius, audrą ir stiprų vėją. Grojant media, kairysis vizualizatorius
 persikelia prieš orų ikoną, o visa weather/clock/media grupė centruojama kartu.
+Paspaudus datos ir orų bloką atsidaro kompaktiškas kalendorius su mėnesio
+navigacija ir penkių dienų prognoze. Prognozė rodoma kairėje, kalendorius —
+dešinėje; kiekvienai dienai paliekama piktograma, min./max. temperatūra ir
+angliška trumpa data, pvz. `Mon, August 16`. Dabartines sąlygas centrinėje
+panelėje teikia `wttr.in`, o penkių dienų prognozę — Open-Meteo. Abu šaltiniai
+pasiekiami tik esant interneto ryšiui; nesėkmės atveju panelė lieka veikianti,
+o prognozės dalyje parodomas prieinamumo pranešimas.
 Stiprūs žemų dažnių transientai paleidžia dvigubą max-rice bangą per centrinį
 bloką ir trumpą visualizerio taškų burst efektą.
+`SUPER+A` control center taip pat rodo iki aštuonių `cliphist` clipboard
+įrašų: tekstas pateikiamas trumpu fragmentu, o vaizdai — thumbnail preview.
+Paspaudimas nukopijuoja įrašą, o „Clear“ išvalo istoriją. Ji automatiškai
+saugoma tiek tekstui, tiek vaizdams per vartotojo `laptopui-clipboard.service`.
 Vizualinis pagrindas naudoja iš
 `NerdMini_shell` pritaikytą „high rice“ stiklo, glow ir animacijų stilių, o
 `matugen` kiekvienam wallpaper'iui sukuria bendrą Quickshell, Hyprland ir Kitty
@@ -50,6 +62,16 @@ Pradinis saugus patikrinimas:
 Panelės ikonoms reikalingi `ttf-jetbrains-mono-nerd` ir `noto-fonts-emoji`,
 garso vizualizacijai — `cava`, o dinaminei paletei — `matugen` ir `jq`. Jie
 įtraukti į bendrą paketų manifestą ir įdiegiami su `packages` komanda.
+Orų kalendoriui naudojami tame pačiame manifeste esantys `curl` ir `jq`;
+`laptopui-weather` helperis susiejamas į `~/.local/bin` vykdant `install`.
+Sistemos rodmenų paspaudimui reikalingas `btop`; jis taip pat yra bendrame
+paketų manifeste.
+`btop` konfigūracija nepiešia savo fono, todėl šiame lange išlieka Kitty
+skaidrumas ir wallpaper blur.
+Clipboard istorijai naudojami jau tame manifeste esantys `wl-clipboard` ir
+`cliphist`; screenshot'ams — `grim` ir `slurp`. Atskiro paketo ar serviso
+įjungimo nereikia: diegiklis susieja `laptopui-screenshot` ir
+`laptopui-clipboard-preview` helperius į `~/.local/bin`.
 
 Diegiklis prieš konfliktų pakeitimą juos perkelia į
 `~/.local/state/dev-shell/backups/`. `restore` grąžina pasirinktą backup:
@@ -71,10 +93,15 @@ Kasdieniai klavišai:
 - `SUPER+R` — programų launcher;
 - `SUPER+A` — control center;
 - `SUPER+N` — notification center / DND;
+- `SUPER+S` — viso ekrano (-ų) screenshot į `Pictures/Screenshots` ir clipboard;
+- `SUPER+SHIFT+S` — pažymėto regiono screenshot į `Pictures/Screenshots` ir clipboard;
+- `SUPER+A` — clipboard vaizdams rodo thumbnail; screenshot taip pat čia
+  atsiranda automatiškai;
 - multimedia klavišai — garsas, mikrofonas ir ryškumas su OSD;
 - media kortelė — groti/pristabdyti ir pereiti prie kito MPRIS kūrinio;
 - performance mygtukas — perjungti performance/balanced profilį, jei
   performance profilį pateikia aktyvus `powerprofilesctl` backend'as;
+- CPU arba RAM rodmuo — atidaro Kitty terminalą su interaktyviu `btop`;
 - update mygtukas — rodo laukiančių oficialių Arch paketų kiekį (nulio
   nerodo), o paspaudus atidaro spalvotą terminalo updaterį;
 - panelės power mygtukas — logout, restart ir shutdown su patvirtinimu.
