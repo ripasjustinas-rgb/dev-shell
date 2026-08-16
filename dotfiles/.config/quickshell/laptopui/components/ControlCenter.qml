@@ -116,12 +116,15 @@ Item {
                     ControlRow { visible: Capabilities.hasAudioSource; icon: root.sourceMuted ? "󰍭" : "󰍬"; title: "Microphone"; value: root.sourceVolume; level: root.sourceLevel; muted: root.sourceMuted; muteAvailable: true; muteIcon: root.sourceMuted ? "󰍭" : "󰍬"; deviceSelectionAvailable: true; microphone: true; onLevelRequested: level => root.queueVolume("@DEFAULT_AUDIO_SOURCE@", level); onMuteRequested: root.mute("@DEFAULT_AUDIO_SOURCE@"); onDeviceSelectionChanged: delayedRefresh.restart() }
                     ControlRow { visible: Capabilities.hasBacklight && Capabilities.hasBrightnessctl; icon: "󰃠"; title: "Brightness"; value: root.brightness; level: root.brightnessLevel; onLevelRequested: level => root.queueBrightness(level) }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
-                    RowLayout {
+                    GridLayout {
                         Layout.fillWidth: true
-                        QuickToggle { visible: Capabilities.hasWifi; icon: "󰤨"; label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off"; active: Networking.wifiEnabled; onClicked: Networking.wifiEnabled = !Networking.wifiEnabled }
-                        QuickToggle { visible: Capabilities.powerProfilesAvailable; icon: "󰂄"; label: root.profile; active: root.profile === "performance"; onClicked: profilePopup.open = !profilePopup.open }
-                        QuickToggle { icon: "󰏤"; label: SettingsState.calmMode ? "Calm" : "Effects"; active: SettingsState.calmMode; onClicked: SettingsState.toggleCalmMode() }
-                        QuickToggle { icon: "󰂚"; label: SettingsState.dnd ? "DND" : "Notifications"; active: SettingsState.dnd; onClicked: SettingsState.toggleDnd() }
+                        columns: 2
+                        columnSpacing: 8
+                        rowSpacing: 8
+                        QuickToggle { Layout.fillWidth: true; Layout.preferredWidth: 0; visible: Capabilities.hasWifi; icon: "󰤨"; label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off"; active: Networking.wifiEnabled; onClicked: Networking.wifiEnabled = !Networking.wifiEnabled }
+                        QuickToggle { Layout.fillWidth: true; Layout.preferredWidth: 0; visible: Capabilities.powerProfilesAvailable; icon: "󰂄"; label: root.profile; active: root.profile === "performance"; onClicked: profilePopup.open = !profilePopup.open }
+                        QuickToggle { Layout.fillWidth: true; Layout.preferredWidth: 0; icon: "󰏤"; label: SettingsState.calmMode ? "Calm" : "Effects"; active: SettingsState.calmMode; onClicked: SettingsState.toggleCalmMode() }
+                        QuickToggle { Layout.fillWidth: true; Layout.preferredWidth: 0; icon: "󰂚"; label: SettingsState.dnd ? "DND" : "Notifications"; active: SettingsState.dnd; onClicked: SettingsState.toggleDnd() }
                     }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
                     ClipboardHistory {
