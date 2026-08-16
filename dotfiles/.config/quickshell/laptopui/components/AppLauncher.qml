@@ -37,6 +37,9 @@ Item {
             return !entry.noDisplay && fuzzyMatch(haystack, query)
         })
     }
+    function keyboardEntries() {
+        return query.length ? matchingEntries() : entries(recentIds)
+    }
     function remember(entry) {
         recentIds = [entry.id, ...recentIds.filter(id => id !== entry.id)].slice(0, 4)
         recentWriter.exec(["sh", "-c", "mkdir -p \"$HOME/.local/state/laptopui\" && printf '%s\\n' '" + recentIds.join("' '") + "' > \"$HOME/.local/state/laptopui/recent-apps\""])
@@ -110,12 +113,12 @@ Item {
                             onTextChanged: { root.searchText = text; root.query = text.toLowerCase(); root.selectedIndex = 0 }
                             Keys.onEscapePressed: root.closeRequested()
                             Keys.onReturnPressed: {
-                                const matches = root.matchingEntries()
-                                if (root.query.length && matches.length) root.launch(matches[Math.min(root.selectedIndex, matches.length - 1)])
+                                const matches = root.keyboardEntries()
+                                if (matches.length) root.launch(matches[Math.min(root.selectedIndex, matches.length - 1)])
                             }
-                            Keys.onDownPressed: { const count = root.matchingEntries().length; if (count) root.selectedIndex = (root.selectedIndex + 1) % count }
-                            Keys.onUpPressed: { const count = root.matchingEntries().length; if (count) root.selectedIndex = (root.selectedIndex - 1 + count) % count }
-                            Keys.onTabPressed: { const count = root.matchingEntries().length; if (count) root.selectedIndex = (root.selectedIndex + 1) % count }
+                            Keys.onDownPressed: { const count = root.keyboardEntries().length; if (count) root.selectedIndex = (root.selectedIndex + 1) % count }
+                            Keys.onUpPressed: { const count = root.keyboardEntries().length; if (count) root.selectedIndex = (root.selectedIndex - 1 + count) % count }
+                            Keys.onTabPressed: { const count = root.keyboardEntries().length; if (count) root.selectedIndex = (root.selectedIndex + 1) % count }
                         }
                         Timer { interval: 1; running: root.open; onTriggered: search.forceActiveFocus() }
                         Text { visible: !search.text.length; anchors.left: parent.left; anchors.leftMargin: 46; anchors.verticalCenter: parent.verticalCenter; text: "Search applications…"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 15 }
@@ -143,8 +146,9 @@ Item {
                                 model: root.entries(root.recentIds)
                                 delegate: Rectangle {
                                     required property var modelData
+                                    required property int index
                                     width: recentList.width; height: 48; radius: 10
-                                    color: recentMouse.containsMouse ? Theme.surfaceHover : Theme.surface
+                                    color: index === root.selectedIndex ? Theme.surfaceHover : (recentMouse.containsMouse ? Theme.surfaceHover : Theme.surface)
                                     RowLayout {
                                         anchors.fill: parent; anchors.margins: 10; spacing: 12
                                         IconImage { source: Quickshell.iconPath(modelData.icon || "application-x-executable"); implicitSize: 26; Layout.preferredWidth: 26; Layout.preferredHeight: 26 }

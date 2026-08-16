@@ -111,6 +111,9 @@ Kasdieniai klavišai:
 
 Notification serverį valdo Quickshell. `mako.service` šiame profilyje yra
 išjungtas, kad nepradėtų konkuruojančio daemon'o.
+Panelės notification ikona rodo unread kiekį tik kai jis nėra nulis; atidarius
+notification centrą jis pažymimas perskaitytu. Command palette gali saugiai
+perkrauti Quickshell per `laptopui-reload` helperį.
 
 UI prisitaiko pagal realias galimybes: desktop'e be baterijos ir backlight
 atitinkami control center valdikliai nesikrauna. Panelės connectivity mygtukas

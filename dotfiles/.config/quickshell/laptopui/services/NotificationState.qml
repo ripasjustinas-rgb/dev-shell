@@ -26,7 +26,6 @@ Item {
         keepOnReload: true
         actionsSupported: true
         actionIconsSupported: true
-        inlineReplySupported: true
         bodySupported: true
         onNotification: function(notification) {
             notification.tracked = true
