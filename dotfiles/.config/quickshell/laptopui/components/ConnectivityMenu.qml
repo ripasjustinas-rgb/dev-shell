@@ -38,6 +38,10 @@ PopupWindow {
                     RowLayout { Layout.fillWidth: true
                         Text { text: "Wi-Fi"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
                         Item { Layout.fillWidth: true }
+                        Rectangle { visible: root.wifiDevice && Networking.wifiEnabled; width: 42; height: 22; radius: 11; color: Theme.elevated
+                            Text { anchors.centerIn: parent; text: root.wifiDevice && root.wifiDevice.scannerEnabled ? "Stop" : "Scan"; color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: 10 }
+                            MouseArea { anchors.fill: parent; onClicked: { if (root.wifiDevice) root.wifiDevice.scannerEnabled = !root.wifiDevice.scannerEnabled } }
+                        }
                         Rectangle { width: 42; height: 22; radius: height / 2; color: Networking.wifiEnabled ? Theme.accent : Theme.elevated
                             Rectangle { width: 16; height: 16; radius: width / 2; anchors.verticalCenter: parent.verticalCenter; x: Networking.wifiEnabled ? parent.width - width - 3 : 3; color: Networking.wifiEnabled ? Theme.accentText : Theme.muted
                                 Behavior on x { NumberAnimation { duration: Theme.animationFast } }
@@ -61,13 +65,16 @@ PopupWindow {
                         Text { text: "Bluetooth"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
                         Item { Layout.fillWidth: true }
                         Text { visible: !BluetoothState.available; text: "Inactive"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 }
+                        Rectangle { visible: BluetoothState.enabled; width: 42; height: 22; radius: 11; color: Theme.elevated
+                            Text { anchors.centerIn: parent; text: BluetoothState.scanning ? "Stop" : "Scan"; color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: 10 }
+                            MouseArea { anchors.fill: parent; onClicked: BluetoothState.scan() }
+                        }
                         Rectangle { width: 42; height: 22; radius: height / 2; color: BluetoothState.enabled ? Theme.accent : Theme.elevated
                             Rectangle { width: 16; height: 16; radius: width / 2; anchors.verticalCenter: parent.verticalCenter; x: BluetoothState.enabled ? parent.width - width - 3 : 3; color: BluetoothState.enabled ? Theme.accentText : Theme.muted
                                 Behavior on x { NumberAnimation { duration: Theme.animationFast } }
                             }
                             MouseArea { anchors.fill: parent; onClicked: { if (BluetoothState.available) BluetoothState.run("power", BluetoothState.enabled ? "off" : "on"); else BluetoothState.activateService() } }
                         }
-                        Text { visible: BluetoothState.enabled; text: BluetoothState.scanning ? "Stop" : "Scan"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: BluetoothState.scan() } }
                     }
                     Repeater { model: BluetoothState.devices
                         delegate: Rectangle { required property var modelData; Layout.fillWidth: true; height: 38; radius: Theme.radius; color: deviceMouse.containsMouse ? Theme.surfaceHover : "transparent"

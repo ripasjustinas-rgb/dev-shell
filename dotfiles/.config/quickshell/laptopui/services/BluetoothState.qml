@@ -6,7 +6,9 @@ import qs.services
 
 Item {
     id: root
-    readonly property var adapter: Bluetooth.defaultAdapter
+    // Some BlueZ setups expose an adapter in the adapters model without
+    // selecting defaultAdapter. Treat the first discovered adapter as primary.
+    readonly property var adapter: Bluetooth.defaultAdapter || (Bluetooth.adapters.values.length ? Bluetooth.adapters.values[0] : null)
     property bool available: adapter !== null
     property bool enabled: adapter ? adapter.enabled : false
     property bool scanning: adapter ? adapter.discovering : false
