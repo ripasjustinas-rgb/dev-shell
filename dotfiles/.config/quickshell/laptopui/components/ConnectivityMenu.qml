@@ -5,24 +5,24 @@ import QtQuick.Layouts
 import qs.services
 import qs.theme
 
-PopupWindow {
+Item {
     id: root
     property Item anchorItem
+    property bool anchoredToPanelEdge: false
+    property bool requestedOpen: false
     property var wifiDevice: {
         for (const device of Networking.devices.values) if (device.type === DeviceType.Wifi) return device
         return null
     }
-    anchor.item: anchorItem
-    anchor.edges: Edges.Bottom | Edges.Right
-    anchor.gravity: Edges.Bottom | Edges.Right
-    anchor.adjustment: PopupAdjustment.Flip | PopupAdjustment.Slide
     readonly property bool dualRadio: Capabilities.hasWifi && Capabilities.hasBluetooth
-    implicitWidth: dualRadio ? 640 : 350
-    implicitHeight: content.implicitHeight
-    visible: false
-    color: "transparent"
-    grabFocus: true
-    onVisibleChanged: { if (visible && wifiDevice) wifiDevice.scannerEnabled = true; if (visible) BluetoothState.refresh() }
+    onRequestedOpenChanged: syncOpenState()
+
+    function syncOpenState() {
+        if (requestedOpen) {
+            if (wifiDevice) wifiDevice.scannerEnabled = true
+            BluetoothState.refresh()
+        }
+    }
 
     function connectWifi(network) {
         if (network.connected) {
@@ -36,14 +36,57 @@ PopupWindow {
         }
     }
 
+    Variants {
+        model: Quickshell.screens
+
+        PanelWindow {
+            required property var modelData
+            screen: modelData
+            visible: root.requestedOpen || content.opacity > 0
+            color: "transparent"
+            exclusionMode: ExclusionMode.Ignore
+            focusable: true
+            anchors { top: true; bottom: true; left: true; right: true }
+            Shortcut { enabled: root.requestedOpen; sequence: "Escape"; onActivated: SettingsState.connectivityOpen = false }
+            MouseArea { anchors.fill: parent; onClicked: SettingsState.connectivityOpen = false }
+
     Rectangle {
         id: content
-        anchors.fill: parent; anchors.topMargin: 6
-        radius: Theme.radius; color: Theme.surface
-        implicitHeight: Math.min(390, Math.max(250, layout.implicitHeight + 24))
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.topMargin: Theme.panelPopupCardTop
+        anchors.rightMargin: Theme.panelPopupRightInset
+        width: root.dualRadio ? 640 : 350
+        height: implicitHeight
+        // Keep this panel close to the calendar/control-center footprint. A
+        // short network list used to make the popup jump noticeably lower.
+        radius: Theme.radiusLarge; color: Theme.background
+        border.color: Theme.border; border.width: 1
+        opacity: root.requestedOpen ? 1 : 0
+        scale: root.requestedOpen ? 1 : 0.89
+        rotation: root.requestedOpen ? 0 : -1.8
+        transformOrigin: Item.TopRight
+        implicitHeight: Math.min(410, Math.max(286, layout.implicitHeight + 28))
+        focus: root.requestedOpen
+        Keys.onEscapePressed: SettingsState.connectivityOpen = false
+        MouseArea { anchors.fill: parent }
+        Behavior on opacity { NumberAnimation { duration: Theme.animationFast + 30; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.animationNormal + 20; easing.type: Easing.OutBack } }
+        Behavior on rotation { NumberAnimation { duration: Theme.animationNormal + 40; easing.type: Easing.OutBack } }
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 8
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: root.requestedOpen ? parent.width * 0.52 : 0
+            height: 2
+            radius: height / 2
+            color: Theme.accent
+            opacity: 0.85
+            Behavior on width { NumberAnimation { duration: Theme.animationNormal + 80; easing.type: Easing.OutCubic } }
+        }
         RowLayout {
             id: layout
-            anchors.fill: parent; anchors.margins: 12; spacing: 9
+            anchors.fill: parent; anchors.margins: 14; spacing: 10
             Item { visible: Capabilities.hasWifi
                 Layout.fillWidth: true; Layout.minimumWidth: root.dualRadio ? 280 : 0; Layout.preferredWidth: root.dualRadio ? 300 : 0; Layout.preferredHeight: wifiSection.implicitHeight; Layout.alignment: Qt.AlignTop
                 ColumnLayout { id: wifiSection; anchors.left: parent.left; anchors.right: parent.right; spacing: 7
@@ -61,7 +104,7 @@ PopupWindow {
                             MouseArea { anchors.fill: parent; onClicked: Networking.wifiEnabled = !Networking.wifiEnabled }
                         }
                     }
-                    ListView { Layout.fillWidth: true; Layout.preferredHeight: Math.min(contentHeight, 170); clip: true; model: root.wifiDevice ? root.wifiDevice.networks : null
+                    ListView { Layout.fillWidth: true; Layout.preferredHeight: Math.min(contentHeight, 182); clip: true; model: root.wifiDevice ? root.wifiDevice.networks : null
                         delegate: Rectangle { required property var modelData; width: ListView.view.width; height: 38; radius: Theme.radius; color: networkMouse.containsMouse ? Theme.surfaceHover : "transparent"
                             RowLayout { anchors.fill: parent; anchors.margins: 8; Text { text: modelData.name; color: modelData.connected ? Theme.accent : Theme.text; font.family: Theme.fontFamily; elide: Text.ElideRight; Layout.fillWidth: true } Text { text: modelData.connected ? "connected" : Math.round(modelData.signalStrength * 100) + "%"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 11 } }
                             MouseArea { id: networkMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.connectWifi(modelData) }
@@ -88,7 +131,7 @@ PopupWindow {
                             MouseArea { anchors.fill: parent; onClicked: { if (BluetoothState.available) BluetoothState.run("power", BluetoothState.enabled ? "off" : "on"); else BluetoothState.activateService() } }
                         }
                     }
-                    Flickable { id: bluetoothList; Layout.fillWidth: true; Layout.preferredHeight: Math.min(bluetoothDeviceColumn.height, 170); clip: true; contentWidth: width; contentHeight: bluetoothDeviceColumn.height
+                    Flickable { id: bluetoothList; Layout.fillWidth: true; Layout.preferredHeight: Math.min(bluetoothDeviceColumn.height, 182); clip: true; contentWidth: width; contentHeight: bluetoothDeviceColumn.height
                         Column { id: bluetoothDeviceColumn; width: bluetoothList.width
                             Repeater { model: BluetoothState.devices
                                 delegate: Rectangle { required property var modelData; property bool optionsOpen: false; width: bluetoothList.width; height: optionsOpen && modelData.paired ? 70 : 38; radius: Theme.radius; color: deviceMouse.containsMouse ? Theme.surfaceHover : "transparent"
@@ -171,6 +214,8 @@ PopupWindow {
                     Text { text: "Connect"; color: wifiPasswordInput.text.length ? Theme.accent : Theme.muted; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; enabled: wifiPasswordInput.text.length > 0; onClicked: wifiPasswordConfirm.connect() } }
                 }
             }
+        }
+    }
         }
     }
 }

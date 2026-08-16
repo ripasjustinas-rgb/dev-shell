@@ -9,6 +9,7 @@ import qs.services
 Item {
     id: root
     property bool open: false
+    property bool closing: false
     signal closeRequested()
     property string sinkVolume: "—"
     property string sourceVolume: "—"
@@ -23,6 +24,8 @@ Item {
     property string pendingVolumeTarget: ""
     property real pendingVolumeLevel: 0
     property real pendingBrightnessLevel: 0
+
+    onOpenChanged: if (!open) closing = true
 
     function refresh() {
         if (Capabilities.hasAudioSink) sinkQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
@@ -68,12 +71,14 @@ Item {
         PanelWindow {
             required property var modelData
             screen: modelData
-            visible: root.open
+            // During close, retain the layer until the card reaches opacity 0.
+            visible: root.open || card.opacity > 0
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
             anchors { top: true; bottom: true; left: true; right: true }
             focusable: true
             Keys.onEscapePressed: root.closeRequested()
+            Shortcut { enabled: root.open; sequence: "Escape"; onActivated: root.closeRequested() }
 
             MouseArea { anchors.fill: parent; onClicked: root.closeRequested() }
 
@@ -82,24 +87,41 @@ Item {
                 width: 390
                 height: Math.min(
                     parent.height - Theme.panelHeight - 28,
-                    Math.max(390, 365 + root.clipboardHeight)
+                    Math.max(410, 365 + root.clipboardHeight)
                 )
                 anchors.top: parent.top
                 anchors.right: parent.right
-                anchors.topMargin: Theme.panelHeight + 14
-                anchors.rightMargin: 14
-                radius: 20
+                anchors.topMargin: Theme.panelPopupCardTop
+                anchors.rightMargin: Theme.panelPopupRightInset
+                radius: Theme.radiusLarge
                 color: Theme.background
                 border.color: Theme.border
                 border.width: 1
                 opacity: root.open ? 1 : 0
-                y: root.open ? Theme.panelHeight + 14 : Theme.panelHeight - 12
-                Behavior on opacity { NumberAnimation { duration: 180 } }
-                scale: root.open ? 1 : 0.97
-                Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
-                Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack } }
+                y: root.open ? Theme.panelPopupCardTop : (root.closing ? Theme.panelPopupCardTop + 22 : Theme.panelHeight - 18)
+                scale: root.open ? 1 : (root.closing ? 0.84 : 0.9)
+                rotation: root.open ? 0 : (root.closing ? 2.4 : -1.5)
+                transformOrigin: Item.TopRight
+                Behavior on opacity { NumberAnimation { duration: Theme.animationNormal - 20; easing.type: Easing.OutCubic } }
+                Behavior on y { NumberAnimation { duration: Theme.animationNormal + 80; easing.type: Easing.OutBack } }
+                Behavior on scale { NumberAnimation { duration: Theme.animationNormal + 70; easing.type: Easing.OutBack } }
+                Behavior on rotation { NumberAnimation { duration: Theme.animationNormal + 100; easing.type: Easing.OutBack } }
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.topMargin: 10
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.open ? parent.width * 0.54 : 0
+                    height: 2
+                    radius: height / 2
+                    color: Theme.accent
+                    opacity: 0.88
+                    Behavior on width { NumberAnimation { duration: Theme.animationNormal + 120; easing.type: Easing.OutCubic } }
+                }
 
                 MouseArea { anchors.fill: parent }
+                focus: root.open
+                Keys.onEscapePressed: root.closeRequested()
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 18
@@ -148,9 +170,13 @@ Item {
                     }
                 }
             }
-            onVisibleChanged: if (visible) {
-                root.refresh()
-                clipboardHistory.refresh()
+            onVisibleChanged: {
+                if (visible) {
+                    root.refresh()
+                    clipboardHistory.refresh()
+                } else {
+                    root.closing = false
+                }
             }
         }
     }

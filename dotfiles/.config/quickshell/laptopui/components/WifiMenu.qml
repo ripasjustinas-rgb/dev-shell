@@ -19,7 +19,7 @@ PopupWindow {
     anchor.gravity: Edges.Bottom | Edges.Right
     anchor.adjustment: PopupAdjustment.Flip | PopupAdjustment.Slide
     implicitWidth: 320
-    implicitHeight: content.implicitHeight
+    implicitHeight: content.implicitHeight + Theme.panelPopupGap
     visible: false
     color: "transparent"
     grabFocus: true
@@ -31,7 +31,7 @@ PopupWindow {
     Rectangle {
         id: content
         anchors.fill: parent
-        anchors.topMargin: 6
+        anchors.topMargin: Theme.panelPopupGap
         radius: Theme.radius
         color: Theme.surface
         implicitHeight: 310

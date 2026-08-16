@@ -7,7 +7,9 @@ import qs.services
 import qs.theme
 
 RowLayout {
+    id: root
     spacing: 3
+    property Item connectivityAnchorItem: null
 
     function wifiNetwork() {
         for (const device of Networking.devices.values) {
@@ -62,9 +64,9 @@ RowLayout {
 
     ConnectivityMenu {
         id: connectivityMenu
-        anchorItem: connectivityButton
-        visible: SettingsState.connectivityOpen
-        onVisibleChanged: if (!visible) SettingsState.connectivityOpen = false
+        anchorItem: root.connectivityAnchorItem || connectivityButton
+        anchoredToPanelEdge: root.connectivityAnchorItem !== null
+        requestedOpen: SettingsState.connectivityOpen
     }
 
     PanelButton {

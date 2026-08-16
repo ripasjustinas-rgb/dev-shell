@@ -208,7 +208,7 @@ Item {
 
                     WorkspaceGroup {}
                     Item { Layout.fillWidth: true }
-                    SystemGroup {}
+                    SystemGroup { connectivityAnchorItem: connectivityPopupAnchor }
                 }
 
                 Rectangle {
@@ -268,7 +268,7 @@ Item {
 
                     ClockWeather {
                         id: clockWeather
-                        onClicked: calendarWeather.visible = !calendarWeather.visible
+                        onClicked: calendarWeather.requestedOpen = !calendarWeather.requestedOpen
                     }
 
                     MediaPill { player: root.activeMediaPlayer }
@@ -296,6 +296,18 @@ Item {
                     opacity: SettingsState.calmMode ? 0.16 : 0.16 + root.bassLevel * 0.7
                     Behavior on opacity { NumberAnimation { duration: 90 } }
                 }
+            }
+
+            // This uses PanelWindow coordinates, so its right edge is exactly
+            // the same inset as Control Center and Notifications.
+            Item {
+                id: connectivityPopupAnchor
+                width: 1
+                height: 1
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.rightMargin: Theme.panelPopupRightInset
+                anchors.topMargin: Theme.panelPopupCardTop - Theme.panelPopupGap - height
             }
         }
     }

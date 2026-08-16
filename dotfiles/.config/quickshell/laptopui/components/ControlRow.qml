@@ -73,7 +73,7 @@ Rectangle {
             radius: 7
             color: deviceMouse.containsMouse ? Theme.surfaceHover : Theme.elevated
             Text { anchors.centerIn: parent; text: "⌄"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 16 }
-            MouseArea { id: deviceMouse; anchors.fill: parent; hoverEnabled: true; onClicked: deviceMenu.visible = !deviceMenu.visible }
+            MouseArea { id: deviceMouse; anchors.fill: parent; hoverEnabled: true; onClicked: deviceMenu.requestedOpen = !deviceMenu.requestedOpen }
         }
     }
     DeviceSelector {

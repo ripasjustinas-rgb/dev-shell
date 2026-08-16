@@ -8,12 +8,15 @@ Item {
     id: root
 
     property bool open: false
+    property bool closing: false
 
     signal closeRequested()
 
     onOpenChanged: {
         if (open)
             NotificationState.clearUnread();
+        else
+            closing = true
 
     }
 
@@ -34,11 +37,14 @@ Item {
             required property var modelData
 
             screen: modelData
-            visible: root.open
+            // Keep the transparent layer up through the closing animation.
+            visible: root.open || card.opacity > 0
+            onVisibleChanged: if (!visible) root.closing = false
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
             focusable: true
             Keys.onEscapePressed: root.closeRequested()
+            Shortcut { enabled: root.open; sequence: "Escape"; onActivated: root.closeRequested() }
 
             anchors {
                 top: true
@@ -53,18 +59,37 @@ Item {
             }
 
             Rectangle {
+                id: card
                 anchors.top: parent.top
                 anchors.right: parent.right
-                anchors.topMargin: Theme.panelHeight + 14
-                anchors.rightMargin: 14
+                anchors.topMargin: Theme.panelPopupCardTop
+                anchors.rightMargin: Theme.panelPopupRightInset
                 width: 390
-                height: 520
+                height: Math.min(520, parent.height - Theme.panelHeight - 28)
                 radius: Theme.radiusLarge
                 color: Theme.background
-                border.color: Theme.glassBorder
+                border.color: Theme.border
                 border.width: 1
                 opacity: root.open ? 1 : 0
                 clip: true
+                y: root.open ? Theme.panelPopupCardTop : (root.closing ? Theme.panelPopupCardTop + 22 : Theme.panelHeight - 18)
+                scale: root.open ? 1 : (root.closing ? 0.84 : 0.9)
+                rotation: root.open ? 0 : (root.closing ? 2.4 : -1.5)
+                transformOrigin: Item.TopRight
+                focus: root.open
+                Keys.onEscapePressed: root.closeRequested()
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.topMargin: 10
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.open ? parent.width * 0.54 : 0
+                    height: 2
+                    radius: height / 2
+                    color: Theme.accent
+                    opacity: 0.88
+                    Behavior on width { NumberAnimation { duration: Theme.animationNormal + 120; easing.type: Easing.OutCubic } }
+                }
 
                 MouseArea {
                     anchors.fill: parent
@@ -72,8 +97,8 @@ Item {
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 10
+                    anchors.margins: 18
+                    spacing: 12
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -348,6 +373,30 @@ Item {
                 Behavior on opacity {
                     NumberAnimation {
                         duration: Theme.animationFast
+                    }
+
+                }
+
+                Behavior on y {
+                    NumberAnimation {
+                        duration: Theme.animationNormal + 80
+                        easing.type: Easing.OutBack
+                    }
+
+                }
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: Theme.animationNormal + 70
+                        easing.type: Easing.OutBack
+                    }
+
+                }
+
+                Behavior on rotation {
+                    NumberAnimation {
+                        duration: Theme.animationNormal + 100
+                        easing.type: Easing.OutBack
                     }
 
                 }

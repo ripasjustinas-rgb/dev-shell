@@ -4,22 +4,14 @@ import QtQuick
 import QtQuick.Layouts
 import qs.theme
 
-PopupWindow {
+Item {
     id: root
     property Item anchorItem
     property string location: "Vilnius"
     property date displayDate: new Date()
     property var forecast: []
     property bool forecastLoading: false
-
-    anchor.item: root.anchorItem
-    anchor.edges: Edges.Bottom
-    anchor.gravity: Edges.Bottom
-    anchor.adjustment: PopupAdjustment.Flip | PopupAdjustment.Slide
-    implicitWidth: 640
-    implicitHeight: card.implicitHeight + 6
-    color: "transparent"
-    grabFocus: true
+    property bool requestedOpen: false
 
     function monthStart() {
         return new Date(displayDate.getFullYear(), displayDate.getMonth(), 1)
@@ -67,7 +59,7 @@ PopupWindow {
         return "\ue33d"
     }
 
-    onVisibleChanged: if (visible) refreshForecast()
+    onRequestedOpenChanged: if (requestedOpen) refreshForecast()
 
     Process {
         id: forecastQuery
@@ -84,15 +76,56 @@ PopupWindow {
         }
     }
 
+    Variants {
+        model: Quickshell.screens
+
+        PanelWindow {
+            required property var modelData
+            screen: modelData
+            visible: root.requestedOpen || card.opacity > 0
+            color: "transparent"
+            exclusionMode: ExclusionMode.Ignore
+            focusable: true
+            anchors { top: true; bottom: true; left: true; right: true }
+            Shortcut { enabled: root.requestedOpen; sequence: "Escape"; onActivated: root.requestedOpen = false }
+            MouseArea { anchors.fill: parent; onClicked: root.requestedOpen = false }
+
     Rectangle {
         id: card
-        anchors.fill: parent
-        anchors.topMargin: 6
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: 640
+        height: implicitHeight
+        anchors.topMargin: Theme.panelPopupCardTop
         implicitHeight: 380
         radius: Theme.radiusLarge
         color: Theme.background
         border.width: 1
         border.color: Theme.border
+        opacity: root.requestedOpen ? 1 : 0
+        // The close has its own direction: it folds away instead of merely
+        // playing the opening pose backwards.
+        scale: root.requestedOpen ? 1 : 0.91
+        rotation: root.requestedOpen ? 0 : -1.3
+        transformOrigin: Item.Top
+        focus: root.requestedOpen
+        Keys.onEscapePressed: root.requestedOpen = false
+        MouseArea { anchors.fill: parent }
+        Behavior on opacity { NumberAnimation { duration: Theme.animationNormal; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.animationNormal + 60; easing.type: Easing.OutBack } }
+        Behavior on rotation { NumberAnimation { duration: Theme.animationNormal + 80; easing.type: Easing.OutBack } }
+
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 9
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: root.requestedOpen ? parent.width * 0.44 : 0
+            height: 2
+            radius: height / 2
+            color: Theme.accent
+            opacity: 0.85
+            Behavior on width { NumberAnimation { duration: Theme.animationNormal + 110; easing.type: Easing.OutCubic } }
+        }
 
         RowLayout {
             anchors.fill: parent
@@ -242,6 +275,8 @@ PopupWindow {
                 }
                 Item { Layout.fillHeight: true }
             }
+        }
+    }
         }
     }
 }

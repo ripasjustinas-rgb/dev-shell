@@ -12,6 +12,8 @@ PopupWindow {
     property var devices: []
     property string statusText: ""
     property var connectedOutputs: []
+    property bool requestedOpen: false
+    property bool closing: false
     signal deviceSelected()
 
     anchor.item: root.anchorItem
@@ -19,10 +21,11 @@ PopupWindow {
     anchor.gravity: Edges.Bottom | Edges.Right
     anchor.adjustment: PopupAdjustment.Flip | PopupAdjustment.Slide
     implicitWidth: 290
-    implicitHeight: content.implicitHeight
-    visible: false
+    implicitHeight: content.implicitHeight + Theme.panelPopupGap
+    visible: requestedOpen || content.opacity > 0
     color: "transparent"
     grabFocus: true
+    Shortcut { enabled: root.requestedOpen; sequence: "Escape"; onActivated: root.requestedOpen = false }
 
     function refresh() {
         statusQuery.exec(["wpctl", "status"])
@@ -110,21 +113,45 @@ PopupWindow {
         }
     }
 
-    onVisibleChanged: if (visible) refresh()
+    onRequestedOpenChanged: {
+        if (requestedOpen) refresh()
+        else closing = true
+    }
+    onVisibleChanged: if (!visible) closing = false
 
     Rectangle {
         id: content
         anchors.fill: parent
-        anchors.topMargin: 6
-        radius: Theme.radius
+        anchors.topMargin: Theme.panelPopupGap
+        radius: Theme.radiusLarge
         color: Theme.background
         border.color: Theme.border
         border.width: 1
-        implicitHeight: Math.min(280, Math.max(76, 48 + deviceList.contentHeight + 12))
+        opacity: root.requestedOpen ? 1 : 0
+        scale: root.requestedOpen ? 1 : (root.closing ? 0.8 : 0.88)
+        rotation: root.requestedOpen ? 0 : (root.closing ? 3.2 : -2.2)
+        transformOrigin: Item.TopRight
+        implicitHeight: Math.min(292, Math.max(104, 48 + deviceList.contentHeight + 16))
+        focus: root.requestedOpen
+        Keys.onEscapePressed: root.requestedOpen = false
+        Behavior on opacity { NumberAnimation { duration: Theme.animationFast; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.animationNormal; easing.type: Easing.OutBack } }
+        Behavior on rotation { NumberAnimation { duration: Theme.animationNormal + 20; easing.type: Easing.OutBack } }
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 8
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: root.requestedOpen ? parent.width * 0.48 : 0
+            height: 2
+            radius: height / 2
+            color: Theme.accent
+            opacity: 0.85
+            Behavior on width { NumberAnimation { duration: Theme.animationNormal + 60; easing.type: Easing.OutCubic } }
+        }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 12
+            anchors.margins: 14
             spacing: 8
             Text {
                 text: root.microphone ? "Input device" : "Output device"

@@ -24,6 +24,12 @@ QtObject {
     property color success: "#b8f2c8"
     readonly property int panelHeight: 48
     readonly property int panelContentHeight: 36
+    // Shared vertical gap for popups anchored to the panel.
+    readonly property int panelPopupGap: 6
+    // Absolute card top used by fullscreen popup overlays. It matches the
+    // calendar card, which is anchored to the centered panel content.
+    readonly property int panelPopupCardTop: panelHeight - 2
+    readonly property int panelPopupRightInset: 14
     readonly property int spacing: 8
     readonly property int radius: 14
     readonly property int radiusLarge: 22

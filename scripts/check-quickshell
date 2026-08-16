@@ -17,6 +17,16 @@ else
   echo "SKIP: qmlimportscanner is unavailable; graphical QML smoke test requires a Hyprland/Wayland session."
 fi
 
+if command -v qmllint >/dev/null 2>&1; then
+  # Catch QML parser and duplicate-property errors before a live reload. This
+  # deliberately covers every component, including ones not instantiated by a
+  # headless smoke test.
+  mapfile -t qml_files < <(find "$qml_root" -type f -name '*.qml' -print)
+  qmllint "${qml_files[@]}"
+else
+  echo "SKIP: qmllint is unavailable; QML syntax checks are limited to import scanning."
+fi
+
 if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
   echo "SKIP: runtime QML smoke test requires an active Hyprland/Wayland session."
 fi
