@@ -9,10 +9,21 @@ Item {
     id: root
     property bool open: false
     property string query: ""
+    property int selectedWorkspace: 1
     signal closeRequested()
+    function selectWorkspace(delta) {
+        selectedWorkspace = Math.max(1, Math.min(5, selectedWorkspace + delta))
+    }
+    function activateSelectedWorkspace() {
+        Hyprland.dispatch("workspace " + selectedWorkspace)
+        closeRequested()
+    }
     Variants { model: Quickshell.screens
         PanelWindow { required property var modelData; screen: modelData; visible: root.open; color: Theme.overlay; exclusionMode: ExclusionMode.Ignore; anchors { top: true; bottom: true; left: true; right: true } focusable: true
             Keys.onEscapePressed: root.closeRequested()
+            Keys.onLeftPressed: root.selectWorkspace(-1)
+            Keys.onRightPressed: root.selectWorkspace(1)
+            Keys.onReturnPressed: root.activateSelectedWorkspace()
             MouseArea { anchors.fill: parent; onClicked: root.closeRequested() }
             Rectangle { anchors.centerIn: parent; width: Math.min(parent.width - 80, 900); height: Math.min(parent.height - 100, 600); radius: Theme.radiusLarge; color: Theme.background; border.color: Theme.border
                 MouseArea { anchors.fill: parent }
@@ -21,11 +32,14 @@ Item {
                     TextInput { id: search; Layout.fillWidth: true; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 14; text: root.query
                         onTextChanged: root.query = text.toLowerCase()
                         Keys.onEscapePressed: root.closeRequested()
+                        Keys.onLeftPressed: root.selectWorkspace(-1)
+                        Keys.onRightPressed: root.selectWorkspace(1)
+                        Keys.onReturnPressed: root.activateSelectedWorkspace()
                         Rectangle { z: -1; anchors.fill: parent; anchors.margins: -9; radius: Theme.radius; color: Theme.elevated }
                     }
                     Flow { Layout.fillWidth: true; Layout.fillHeight: true; spacing: 10
                         Repeater { model: 5
-                            delegate: Rectangle { required property int index; readonly property int workspace: index + 1; readonly property var info: WindowState.workspace(workspace); width: 160; height: 180; radius: Theme.radius; color: info && info.focused ? Theme.accent : Theme.surface
+                            delegate: Rectangle { required property int index; readonly property int workspace: index + 1; readonly property var info: WindowState.workspace(workspace); width: 160; height: 180; radius: Theme.radius; color: info && info.focused ? Theme.accent : Theme.surface; border.width: root.selectedWorkspace === workspace ? 2 : 0; border.color: Theme.accent
                                 Column { anchors.fill: parent; anchors.margins: 12; spacing: 7; Text { text: "Workspace " + parent.parent.workspace; color: parent.parent.info && parent.parent.info.focused ? Theme.background : Theme.text; font.family: Theme.fontFamily; font.bold: true }
                                     Text { visible: parent.parent.info && parent.parent.info.monitor; text: parent.parent.info.monitor.name; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 9 }
                                     Repeater { model: parent.parent.info ? parent.parent.info.toplevels : null; delegate: Rectangle { required property var modelData; visible: !root.query.length || (modelData.title + " " + modelData.appId).toLowerCase().includes(root.query); width: 136; height: visible ? 20 : 0; radius: 5; color: modelData.activated ? Theme.accent : "transparent"; Text { anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: modelData.title || modelData.appId; color: modelData.activated ? Theme.background : Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10; elide: Text.ElideRight } MouseArea { anchors.fill: parent; onClicked: { Hyprland.dispatch("focuswindow address:" + modelData.address); root.closeRequested() } } } }
