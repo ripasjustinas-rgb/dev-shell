@@ -16,6 +16,11 @@ Item {
     }
     Variants { model: Quickshell.screens
         PanelWindow { required property var modelData; screen: modelData; visible: root.open; color: Theme.overlay; exclusionMode: ExclusionMode.Ignore; anchors { top: true; bottom: true; left: true; right: true }
+            focusable: true
+            Keys.onEscapePressed: {
+                if (root.pending.length) root.pending = ""
+                else root.closeRequested()
+            }
             MouseArea { anchors.fill: parent; onClicked: root.closeRequested() }
             Rectangle { anchors.centerIn: parent; width: 370; height: root.pending.length ? 220 : 180; radius: 20; color: Theme.background; border.color: Theme.border; border.width: 1; scale: root.open ? 1 : 0.94
                 Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }

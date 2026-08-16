@@ -74,6 +74,8 @@ Item {
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
             anchors { top: true; bottom: true; left: true; right: true }
+            focusable: true
+            Keys.onEscapePressed: root.closeRequested()
 
             MouseArea { anchors.fill: parent; onClicked: root.closeRequested() }
 
