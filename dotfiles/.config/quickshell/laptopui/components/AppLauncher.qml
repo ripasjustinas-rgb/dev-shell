@@ -24,6 +24,49 @@ Item {
         return true
     }
 
+    function normalized(value) { return (value || "").toLowerCase() }
+    function startsWithWord(value, needle) {
+        return normalized(value).split(/[^a-z0-9]+/).some(word => word.startsWith(needle))
+    }
+    function matchScore(entry) {
+        const needle = query
+        const name = normalized(entry.name)
+        const id = normalized(entry.id)
+        const genericName = normalized(entry.genericName)
+        const comment = normalized(entry.comment)
+
+        // Prefer the application name above metadata, then make every tie
+        // deterministic below. This keeps the intended app at the top while
+        // typing instead of inheriting DesktopEntries' arbitrary order.
+        if (name === needle) return 0
+        if (id === needle) return 1
+        if (name.startsWith(needle)) return 10
+        if (startsWithWord(name, needle)) return 20
+        if (id.startsWith(needle)) return 30
+        if (startsWithWord(id, needle) || genericName.startsWith(needle)) return 40
+        if (name.includes(needle)) return 50
+        if (id.includes(needle) || genericName.includes(needle)) return 60
+        if (comment.includes(needle)) return 70
+        if (fuzzyMatch(name, needle)) return 80
+        if (fuzzyMatch(id, needle) || fuzzyMatch(genericName, needle)) return 90
+        return -1
+    }
+    function compareEntries(left, right) {
+        const scoreDifference = matchScore(left) - matchScore(right)
+        if (scoreDifference !== 0) return scoreDifference
+
+        const leftName = normalized(left.name)
+        const rightName = normalized(right.name)
+        if (leftName < rightName) return -1
+        if (leftName > rightName) return 1
+        const leftId = normalized(left.id)
+        const rightId = normalized(right.id)
+        return leftId < rightId ? -1 : (leftId > rightId ? 1 : 0)
+    }
+    function iconSource(entry) {
+        return Quickshell.iconPath(entry.icon || "application-x-executable", "application-x-executable")
+    }
+
     function resolveEntry(key) {
         const exact = DesktopEntries.applications.values.find(entry => entry.id === key)
         return exact || DesktopEntries.heuristicLookup(key)
@@ -32,10 +75,9 @@ Item {
         return ids.map(id => resolveEntry(id)).filter(entry => entry !== null)
     }
     function matchingEntries() {
-        return DesktopEntries.applications.values.filter(entry => {
-            const haystack = (entry.name + " " + entry.genericName + " " + entry.comment).toLowerCase()
-            return !entry.noDisplay && fuzzyMatch(haystack, query)
-        })
+        return DesktopEntries.applications.values
+            .filter(entry => !entry.noDisplay && matchScore(entry) >= 0)
+            .sort((left, right) => compareEntries(left, right))
     }
     function keyboardEntries() {
         return query.length ? matchingEntries() : entries(recentIds)
@@ -151,7 +193,7 @@ Item {
                                     color: index === root.selectedIndex ? Theme.surfaceHover : (recentMouse.containsMouse ? Theme.surfaceHover : Theme.surface)
                                     RowLayout {
                                         anchors.fill: parent; anchors.margins: 10; spacing: 12
-                                        IconImage { source: Quickshell.iconPath(modelData.icon || "application-x-executable"); implicitSize: 26; Layout.preferredWidth: 26; Layout.preferredHeight: 26 }
+                                        IconImage { source: root.iconSource(modelData); implicitSize: 26; Layout.preferredWidth: 26; Layout.preferredHeight: 26 }
                                         ColumnLayout { Layout.fillWidth: true; spacing: 1
                                             Text { text: modelData.name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 13; elide: Text.ElideRight; Layout.fillWidth: true }
                                             Text { text: modelData.genericName || modelData.comment; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10; elide: Text.ElideRight; Layout.fillWidth: true }
@@ -183,7 +225,7 @@ Item {
                             color: index === root.selectedIndex || rowMouse.containsMouse ? Theme.surfaceHover : "transparent"
                             Behavior on height { NumberAnimation { duration: 100 } }
                             RowLayout { anchors.fill: parent; anchors.margins: 9; spacing: 12
-                                IconImage { source: Quickshell.iconPath(modelData.icon || "application-x-executable"); implicitSize: 28; Layout.preferredWidth: 28; Layout.preferredHeight: 28 }
+                                IconImage { source: root.iconSource(modelData); implicitSize: 28; Layout.preferredWidth: 28; Layout.preferredHeight: 28 }
                                 ColumnLayout { Layout.fillWidth: true; spacing: 1
                                     Text { text: modelData.name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 13; elide: Text.ElideRight; Layout.fillWidth: true }
                                     Text { text: modelData.genericName || modelData.comment; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10; elide: Text.ElideRight; Layout.fillWidth: true }

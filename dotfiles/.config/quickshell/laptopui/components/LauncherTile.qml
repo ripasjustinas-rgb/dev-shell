@@ -17,9 +17,12 @@ Rectangle {
     Behavior on color { ColorAnimation { duration: 140 } }
     Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
     scale: mouse.containsMouse ? 1.025 : 1
+    function iconSource() {
+        return Quickshell.iconPath(root.entry.icon || "application-x-executable", "application-x-executable")
+    }
     ColumnLayout {
         anchors.fill: parent; anchors.margins: 12; spacing: 7
-        IconImage { source: Quickshell.iconPath(root.entry.icon || "application-x-executable"); implicitSize: 30; Layout.preferredWidth: 30; Layout.preferredHeight: 30 }
+        IconImage { source: root.iconSource(); implicitSize: 30; Layout.preferredWidth: 30; Layout.preferredHeight: 30 }
         Text { text: root.entry.name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true }
     }
     Text {
