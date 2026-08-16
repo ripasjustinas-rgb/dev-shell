@@ -46,7 +46,7 @@ RowLayout {
                 id: mouse
                 anchors.fill: parent
                 hoverEnabled: true
-                onClicked: Hyprland.dispatch("hl.dsp.focus({ workspace = " + parent.workspace + " })")
+                onClicked: Hyprland.dispatch("workspace " + parent.workspace)
             }
         }
     }
