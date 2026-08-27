@@ -44,6 +44,48 @@ Profilio manifestas pridedamas atskirai:
 Paketų komanda yra vienintelė diegimo dalis, kuri kviečia `sudo pacman`. Ji
 nelinkina konfigūracijų ir neįjungia servisų.
 
+### Pasirinktinis Bongo Cat
+
+Panelės Bongo Cat naudoja AUR `wpets` paketą, todėl jis sąmoningai neįtrauktas
+į `pacman` manifestą. Įdiek jį pasirinktu AUR helperiu, pavyzdžiui:
+
+```sh
+yay -S wpets
+sudo usermod -a -G input "$USER"
+```
+
+Kad balta cat kūno spalva sektų dabartinio wallpaperio `matugen` paletę,
+vieną kartą sukompiliuok mažą lokalų variantą. Builderis naudoja `yay` cache
+paliktą wpets source archive ir įdiegia tik vartotojo binary:
+
+```sh
+sudo pacman --needed -S cmake
+laptopui-vpet-build-themed
+```
+
+`laptopui-vpet` tada automatiškai renkasi šį binary ir perduoda jam
+`~/.local/state/laptopui/colors.json` `secondary` spalvą. Pakeitus wallpaperį
+tema sugeneruojama iš naujo, o cat servisas saugiai perstartuojamas. Po wpets
+versijos atnaujinimo builderį paleisk dar kartą; jei upstream patchas
+nebesitaiko, lieka veikiantis standartinis AUR binary.
+
+Tada rask klaviatūrą su `wpets-find-devices` ir įrašyk tik hostui skirtą
+parametrą. `laptopui-vpet.service` procesą paleidžia per jau autorizuotą
+`input` grupę, todėl user manageriui nereikia laukti naujo login:
+
+```sh
+mkdir -p ~/.config/laptopui
+printf '%s\n' 'keyboard_device=/dev/input/event4' > ~/.config/laptopui/vpet.local.conf
+systemctl --user restart laptopui-vpet.service
+```
+
+`event` numeris yra tik pavyzdys. Profilio diegiklis atskirai sugeneruoja
+monitoriaus ir padėties parametrus. Cat telpa į esamą 48 px panelę ir nekeičia
+jos `exclusiveZone`; jei `wpets` neįdiegtas, panelė nepalieka tuščio tarpo.
+Iš lokalaus failo priimamos tik `keyboard_device` eilutės; padėtis lieka
+profilio valdoma, o debug režimas išjungtas, kad klavišai nebūtų rašomi į
+žurnalą.
+
 Clipboard istorijai naudojami bendrame manifeste esantys `wl-clipboard`
 (`wl-copy`, `wl-paste`) ir `cliphist`. Įdiegus dotfiles, `laptopui-clipboard`
 user service automatiškai stebi Wayland tekstą ir vaizdus; jis startuoja su

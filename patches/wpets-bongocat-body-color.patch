@@ -1,0 +1,150 @@
+diff --git a/src/image_loader/bongocat/load_images_bongocat.cpp b/src/image_loader/bongocat/load_images_bongocat.cpp
+index 9df2231..d2aee1c 100644
+--- a/src/image_loader/bongocat/load_images_bongocat.cpp
++++ b/src/image_loader/bongocat/load_images_bongocat.cpp
+@@ -9,9 +9,72 @@
+ #include "image_loader/load_svgs.h"
+ #include "utils/memory.h"
+ #include <cassert>
++#include <cstdint>
++#include <cstdlib>
+
+ namespace bongocat::animation {
+
++static bool parse_bongocat_body_color(const char *value, uint8_t (&color)[3]) {
++  if (value == nullptr || value[0] != '#' || value[7] != '\0') {
++    return false;
++  }
++
++  uint32_t parsed = 0;
++  for (size_t i = 1; i < 7; i++) {
++    parsed <<= 4u;
++    const char digit = value[i];
++    if (digit >= '0' && digit <= '9') {
++      parsed |= static_cast<uint32_t>(digit - '0');
++    } else if (digit >= 'a' && digit <= 'f') {
++      parsed |= static_cast<uint32_t>(digit - 'a' + 10);
++    } else if (digit >= 'A' && digit <= 'F') {
++      parsed |= static_cast<uint32_t>(digit - 'A' + 10);
++    } else {
++      return false;
++    }
++  }
++
++  color[0] = static_cast<uint8_t>((parsed >> 16u) & 0xffu);
++  color[1] = static_cast<uint8_t>((parsed >> 8u) & 0xffu);
++  color[2] = static_cast<uint8_t>(parsed & 0xffu);
++  return true;
++}
++
++static void tint_bongocat_body(generic_sprite_sheet_image_t& image) {
++  uint8_t body_color[3]{};
++  if (!parse_bongocat_body_color(std::getenv("WPETS_BONGOCAT_BODY_COLOR"), body_color) || image.channels < 3) {
++    return;
++  }
++
++  for (size_t i = 0; i + 2 < image.pixels._size_bytes; i += static_cast<size_t>(image.channels)) {
++    const uint8_t red = image.pixels[i];
++    const uint8_t green = image.pixels[i + 1];
++    const uint8_t blue = image.pixels[i + 2];
++    const uint8_t darkest = red < green ? (red < blue ? red : blue) : (green < blue ? green : blue);
++    const uint8_t lightest = red > green ? (red > blue ? red : blue) : (green > blue ? green : blue);
++
++    // The source SVGs include red impact marks below the paws. At panel scale
++    // their antialiased edges look like dark artifacts on light wallpapers.
++    if (image.channels >= 4 && red > 140 && red > green + 70 && red > blue + 70) {
++      image.pixels[i] = 0;
++      image.pixels[i + 1] = 0;
++      image.pixels[i + 2] = 0;
++      image.pixels[i + 3] = 0;
++      continue;
++    }
++
++    // Preserve the pink paw details. Only tint grayscale body pixels; black
++    // strokes remain black while white and antialiased edges inherit color.
++    if (static_cast<int>(lightest) - static_cast<int>(darkest) <= 2) {
++      image.pixels[i] = static_cast<uint8_t>((static_cast<uint32_t>(body_color[0]) * lightest + 127u) / 255u);
++      image.pixels[i + 1] =
++          static_cast<uint8_t>((static_cast<uint32_t>(body_color[1]) * lightest + 127u) / 255u);
++      image.pixels[i + 2] =
++          static_cast<uint8_t>((static_cast<uint32_t>(body_color[2]) * lightest + 127u) / 255u);
++    }
++  }
++}
++
+ created_result_t<bongocat_sprite_sheet_t>
+ load_bongocat_anim([[maybe_unused]] size_t anim_index, get_sprite_callback_t get_sprite, size_t embedded_images_count,
+                     load_bongocat_anim_type_t type,
+@@ -46,5 +109,6 @@ load_bongocat_anim([[maybe_unused]] size_t anim_index, get_sprite_callback_t get
+   bongocat_sprite_sheet_t ret;
+   ret.image = bongocat::move(sprite_sheet.image);
++  tint_bongocat_body(ret.image);
+   ret.frame_width = bongocat::move(sprite_sheet.frame_width);
+   ret.frame_height = bongocat::move(sprite_sheet.frame_height);
+   ret.total_frames = bongocat::move(sprite_sheet.total_frames);
+@@ -67,7 +131,7 @@ load_bongocat_anim([[maybe_unused]] size_t anim_index, get_sprite_callback_t get
+   static_assert(MAX_ANIMATION_FRAMES >= 4);
+-  ret.animations.idle[0] = BONGOCAT_FRAME_BOTH_UP;
+-  ret.animations.idle[1] = BONGOCAT_FRAME_BOTH_UP;
+-  ret.animations.idle[2] = BONGOCAT_FRAME_BOTH_UP;
+-  ret.animations.idle[3] = BONGOCAT_FRAME_BOTH_UP;
++  ret.animations.idle[0] = BONGOCAT_FRAME_BOTH_DOWN;
++  ret.animations.idle[1] = BONGOCAT_FRAME_BOTH_DOWN;
++  ret.animations.idle[2] = BONGOCAT_FRAME_BOTH_DOWN;
++  ret.animations.idle[3] = BONGOCAT_FRAME_SLEEPING;
+
+   ret.animations.boring[0] = BONGOCAT_FRAME_SLEEPING;
+@@ -113,11 +177,11 @@ load_bongocat_anim([[maybe_unused]] size_t anim_index, get_sprite_callback_t get
+   ret.animations.left_writing[0] = BONGOCAT_FRAME_LEFT_DOWN;
+-  ret.animations.left_writing[1] = BONGOCAT_FRAME_BOTH_UP;
++  ret.animations.left_writing[1] = BONGOCAT_FRAME_LEFT_DOWN;
+   ret.animations.left_writing[2] = BONGOCAT_FRAME_LEFT_DOWN;
+-  ret.animations.left_writing[3] = BONGOCAT_FRAME_BOTH_UP;
++  ret.animations.left_writing[3] = BONGOCAT_FRAME_LEFT_DOWN;
+
+   ret.animations.right_writing[0] = BONGOCAT_FRAME_RIGHT_DOWN;
+-  ret.animations.right_writing[1] = BONGOCAT_FRAME_BOTH_UP;
++  ret.animations.right_writing[1] = BONGOCAT_FRAME_RIGHT_DOWN;
+   ret.animations.right_writing[2] = BONGOCAT_FRAME_RIGHT_DOWN;
+-  ret.animations.right_writing[3] = BONGOCAT_FRAME_BOTH_UP;
++  ret.animations.right_writing[3] = BONGOCAT_FRAME_RIGHT_DOWN;
+
+   return ret;
+diff --git a/include/core/bongocat.h b/include/core/bongocat.h
+index 278499e..c273348 100644
+--- a/include/core/bongocat.h
++++ b/include/core/bongocat.h
+@@ -39,7 +39,7 @@ struct created_result_t {
+ // feature flags
+ namespace features {
+   // experimental
+-  inline static constexpr bool BongocatIdleAnimation = false;
++  inline static constexpr bool BongocatIdleAnimation = true;
+   inline static constexpr bool BongocatBoringAnimation = false;
+
+ #ifndef NDEBUG
+diff --git a/src/graphics/animation.cpp b/src/graphics/animation.cpp
+index 1422907..518a664 100644
+--- a/src/graphics/animation.cpp
++++ b/src/graphics/animation.cpp
+@@ -166,9 +166,19 @@ static anim_conditions_t get_anim_conditions([[maybe_unused]] const animation_th
+   const bool process_idle_animation = [&]() {
+     if (current_config.idle_animation) {
+       // by animation_speed
+       if (current_config.animation_speed_ms > 0) {
+-        return current_state.frame_delta_ms_counter > current_config.animation_speed_ms;
++        platform::time_ms_t frame_duration_ms = current_config.animation_speed_ms;
++        if (ctx.shm &&
++            ctx.shm->anim_type == config::config_animation_sprite_sheet_layout_t::Bongocat &&
++            current_state.row_state == animation_state_row_t::Idle) {
++          constexpr platform::time_ms_t BONGOCAT_IDLE_REST_FRAME_MS = 2400;
++          constexpr platform::time_ms_t BONGOCAT_IDLE_BLINK_FRAME_MS = 220;
++          const bool eyes_closed =
++              ctx.shm->animation_player_result.sprite_sheet_col == assets::BONGOCAT_FRAME_SLEEPING;
++          frame_duration_ms = eyes_closed ? BONGOCAT_IDLE_BLINK_FRAME_MS : BONGOCAT_IDLE_REST_FRAME_MS;
++        }
++        return current_state.frame_delta_ms_counter > frame_duration_ms;
+       }
+
+       // by fps
+       return current_config.animation_speed_ms <= 0 && current_state.frame_delta_ms_counter >= fps_ms;

@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+state_home=${XDG_STATE_HOME:-"$HOME/.local/state"}
+config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
+profile_file="$state_home/laptopui/vpet-profile.env"
+config_file="$state_home/laptopui/vpet.conf"
+override_file="$config_home/laptopui/vpet.local.conf"
+palette_file="$state_home/laptopui/colors.json"
+themed_binary="$HOME/.local/lib/laptopui/wpets-themed"
+
+enabled=0
+monitor=""
+height=32
+x_offset=222
+y_offset=0
+
+if [[ -r "$profile_file" ]]; then
+  while IFS='=' read -r key value; do
+    case "$key" in
+      VPET_ENABLED) enabled=$value ;;
+      VPET_MONITOR) monitor=$value ;;
+      VPET_HEIGHT) height=$value ;;
+      VPET_X_OFFSET) x_offset=$value ;;
+      VPET_Y_OFFSET) y_offset=$value ;;
+    esac
+  done < "$profile_file"
+fi
+
+[[ "$enabled" == 1 ]] || exit 0
+[[ "$monitor" =~ ^[A-Za-z0-9._-]+$ ]] || { printf 'invalid VPET_MONITOR: %s\n' "$monitor" >&2; exit 2; }
+[[ "$height" =~ ^[0-9]+$ && "$height" -ge 8 && "$height" -le 128 ]] || { printf 'invalid VPET_HEIGHT: %s\n' "$height" >&2; exit 2; }
+[[ "$x_offset" =~ ^-?[0-9]+$ ]] || { printf 'invalid VPET_X_OFFSET: %s\n' "$x_offset" >&2; exit 2; }
+[[ "$y_offset" =~ ^-?[0-9]+$ ]] || { printf 'invalid VPET_Y_OFFSET: %s\n' "$y_offset" >&2; exit 2; }
+
+if [[ -x "$themed_binary" ]]; then
+  binary=$themed_binary
+  if command -v jq >/dev/null 2>&1 && [[ -r "$palette_file" ]]; then
+    body_color=$(jq -er '.secondary | select(type == "string" and test("^#[0-9a-fA-F]{6}$"))' "$palette_file" 2>/dev/null || true)
+    [[ -n "$body_color" ]] && export WPETS_BONGOCAT_BODY_COLOR=$body_color
+  fi
+elif command -v wpets-all >/dev/null 2>&1; then
+  binary=wpets-all
+elif command -v wpets >/dev/null 2>&1; then
+  binary=wpets
+else
+  exit 0
+fi
+
+mkdir -p -- "$state_home/laptopui"
+temporary=$(mktemp "$state_home/laptopui/vpet.conf.XXXXXX")
+trap 'rm -f -- "$temporary"' EXIT
+printf '%s\n' \
+  "cat_height=$height" \
+  'enable_antialiasing=1' \
+  'cat_align=left' \
+  "cat_x_offset=$x_offset" \
+  "cat_y_offset=$y_offset" \
+  'overlay_height=48' \
+  'overlay_position=top' \
+  'overlay_opacity=0' \
+  'overlay_layer=overlay' \
+  'animation_name=bongocat' \
+  'mirror_x=1' \
+  'idle_frame=3' \
+  'idle_animation=1' \
+  'animation_speed=800' \
+  'idle_sleep_timeout=300' \
+  'enable_hand_mapping=1' \
+  'keypress_duration=120' \
+  'fps=30' \
+  'input_fps=60' \
+  'enable_debug=0' \
+  "monitor=$monitor" > "$temporary"
+
+# Input selection is intentionally untracked because event paths differ
+# between hosts and keyboards. Placement stays profile-owned so a local file
+# cannot make the overlay exceed the existing panel band.
+if [[ -r "$override_file" ]]; then
+  printf '\n# Local input selection\n' >> "$temporary"
+  sed -n -E '/^[[:space:]]*keyboard_device[[:space:]]*=/p' "$override_file" >> "$temporary"
+fi
+mv -- "$temporary" "$config_file"
+trap - EXIT
+
+exec "$binary" --watch-config --config "$config_file"

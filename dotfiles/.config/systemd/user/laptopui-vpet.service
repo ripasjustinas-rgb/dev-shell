@@ -1,0 +1,12 @@
+[Unit]
+Description=LaptopUI Wayland Bongo Cat
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+# The user manager may predate input-group membership. newgrp enters the
+# already-authorized group without broadening device permissions.
+ExecStart=/usr/bin/newgrp input -c "%h/.local/bin/laptopui-vpet"
+Restart=on-failure
+RestartSec=2

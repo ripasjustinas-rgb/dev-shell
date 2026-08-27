@@ -93,3 +93,6 @@ mv -f -- "$kitty_next_file" "$kitty_palette_file"
 if pgrep -x kitty >/dev/null 2>&1; then
   pkill -USR1 -x kitty >/dev/null 2>&1 || true
 fi
+if [[ -x "$HOME/.local/lib/laptopui/wpets-themed" ]]; then
+  systemctl --user try-restart laptopui-vpet.service >/dev/null 2>>"$theme_error_log" || true
+fi

@@ -7,6 +7,8 @@ import qs.theme
 import qs.services
 
 RowLayout {
+    id: root
+    property string screenName: ""
     spacing: 3
 
     Repeater {
@@ -61,4 +63,6 @@ RowLayout {
     WallpaperPicker { id: wallpaperPicker }
 
     UpdateButton {}
+
+    VPetSlot { screenName: root.screenName }
 }

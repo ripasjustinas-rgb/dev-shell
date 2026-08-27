@@ -206,7 +206,7 @@ Item {
                     anchors.rightMargin: 8
                     spacing: Theme.spacing
 
-                    WorkspaceGroup {}
+                    WorkspaceGroup { screenName: modelData.name }
                     Item { Layout.fillWidth: true }
                     SystemGroup { connectivityAnchorItem: connectivityPopupAnchor }
                 }

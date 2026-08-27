@@ -39,6 +39,13 @@ angliška trumpa data, pvz. `Mon, August 16`. Dabartines sąlygas centrinėje
 panelėje teikia `wttr.in`, o penkių dienų prognozę — Open-Meteo. Abu šaltiniai
 pasiekiami tik esant interneto ryšiui; nesėkmės atveju panelė lieka veikianti,
 o prognozės dalyje parodomas prieinamumo pranešimas.
+
+Panelėje pasirinktinai palaikomas `wayland-vpets` Bongo Cat. Laptopo ir
+desktopo profiliai turi atskirą monitoriaus bei dydžio konfigūraciją, tačiau
+abiejuose cat telpa į esamą panelės aukštį ir nemažina naudojamo ekrano ploto.
+Pasirinktinis lokalus buildas jo kūno spalvą ima iš dabartinės `matugen`
+`secondary` reikšmės ir automatiškai persikrauna kartu su wallpaper tema.
+Diegimas ir klaviatūros leidimai aprašyti [docs/PREREQUISITES.md](docs/PREREQUISITES.md).
 Stiprūs žemų dažnių transientai paleidžia dvigubą max-rice bangą per centrinį
 bloką ir trumpą visualizerio taškų burst efektą.
 `SUPER+A` control center taip pat rodo iki aštuonių `cliphist` clipboard

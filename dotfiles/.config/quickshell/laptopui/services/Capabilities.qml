@@ -28,11 +28,12 @@ Item {
     property bool hasCliphist: false
     property bool hasCava: false
     property bool hasBtop: false
+    property bool hasWpets: false
     property var powerProfiles: []
     property string activePowerProfile: ""
 
     function refresh() {
-        probe.exec(["sh", "-c", "test -d /sys/class/backlight && find /sys/class/backlight -mindepth 1 -maxdepth 1 -print -quit | grep -q .; echo backlight:$?; test -d /sys/class/power_supply && find /sys/class/power_supply -maxdepth 2 -name type -exec grep -ql Battery {} \\; -quit; echo battery:$?; test -d /sys/class/bluetooth && find /sys/class/bluetooth -mindepth 1 -maxdepth 1 -print -quit | grep -q .; echo bluetooth:$?; for tool in brightnessctl powerprofilesctl cliphist cava btop wpctl; do command -v $tool >/dev/null 2>&1; echo $tool:$?; done"])
+        probe.exec(["sh", "-c", "test -d /sys/class/backlight && find /sys/class/backlight -mindepth 1 -maxdepth 1 -print -quit | grep -q .; echo backlight:$?; test -d /sys/class/power_supply && find /sys/class/power_supply -maxdepth 2 -name type -exec grep -ql Battery {} \\; -quit; echo battery:$?; test -d /sys/class/bluetooth && find /sys/class/bluetooth -mindepth 1 -maxdepth 1 -print -quit | grep -q .; echo bluetooth:$?; for tool in brightnessctl powerprofilesctl cliphist cava btop wpctl; do command -v $tool >/dev/null 2>&1; echo $tool:$?; done; command -v wpets-all >/dev/null 2>&1 || command -v wpets >/dev/null 2>&1; echo wpets:$?"])
         profiles.exec(["sh", "-c", "command -v powerprofilesctl >/dev/null 2>&1 && { powerprofilesctl list; printf '\\n--ACTIVE--\\n'; powerprofilesctl get; } || true"])
     }
 
@@ -67,6 +68,7 @@ Item {
             root.hasCliphist = result.cliphist
             root.hasCava = result.cava
             root.hasBtop = result.btop
+            root.hasWpets = result.wpets
             root.hasBluetoothHardware = result.bluetooth
             root.hasAudioSink = result.wpctl
             root.hasAudioSource = result.wpctl

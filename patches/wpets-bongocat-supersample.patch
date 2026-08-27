@@ -1,0 +1,91 @@
+diff --git a/src/image_loader/bongocat/load_images_bongocat.cpp b/src/image_loader/bongocat/load_images_bongocat.cpp
+index 8f9b0a0..8a14995 100644
+--- a/src/image_loader/bongocat/load_images_bongocat.cpp
++++ b/src/image_loader/bongocat/load_images_bongocat.cpp
+@@ -11,6 +11,7 @@
+ #include <cassert>
+ #include <cstdint>
+ #include <cstdlib>
++#include <cstring>
+
+ namespace bongocat::animation {
+
+@@ -73,6 +74,49 @@ static void tint_bongocat_body(generic_sprite_sheet_image_t& image) {
+   }
+ }
+
++static bongocat_error_t downsample_bongocat_sprite_sheet(generic_sprite_sheet_t& sheet) {
++  constexpr int SCALE = 2;
++  const int source_width = sheet.image.sprite_sheet_width;
++  const int source_height = sheet.image.sprite_sheet_height;
++  const int source_frame_width = sheet.frame_width;
++  const int source_frame_height = sheet.frame_height;
++  const int target_frame_width = source_frame_width / SCALE;
++  const int target_frame_height = source_frame_height / SCALE;
++  const int target_width = target_frame_width * sheet.total_frames;
++  const int target_height = target_frame_height;
++  const int channels = sheet.image.channels;
++  if (sheet.total_frames <= 0 || target_width <= 0 || target_height <= 0 || channels <= 0) {
++    return bongocat_error_t::BONGOCAT_ERROR_IMAGE;
++  }
++
++  auto target_pixels = make_allocated_array<uint8_t>(static_cast<size_t>(target_width) *
++                                                       static_cast<size_t>(target_height) *
++                                                       static_cast<size_t>(channels));
++  if (!target_pixels) {
++    return bongocat_error_t::BONGOCAT_ERROR_MEMORY;
++  }
++  ::memset(target_pixels.data, 0, target_pixels._size_bytes);
++
++  // Scale each frame from the same local origin. Scaling the entire odd-width
++  // sheet at once changes the sampling phase between frames and causes a
++  // visible one-pixel sideways wobble when the animation advances.
++  for (int frame = 0; frame < sheet.total_frames; frame++) {
++    blit_image_scaled(target_pixels.data, target_pixels._size_bytes, target_width, target_height, channels,
++                      sheet.image.pixels.data, sheet.image.pixels._size_bytes, source_width, source_height, channels,
++                      frame * source_frame_width, 0, source_frame_width, source_frame_height,
++                      frame * target_frame_width, 0, target_frame_width, target_frame_height,
++                      blit_image_color_order_t::RGBA, blit_image_color_order_t::RGBA,
++                      blit_image_color_option_flags_t::BilinearInterpolation);
++  }
++
++  sheet.image.pixels = bongocat::move(target_pixels);
++  sheet.image.sprite_sheet_width = target_width;
++  sheet.image.sprite_sheet_height = target_height;
++  sheet.frame_width = target_frame_width;
++  sheet.frame_height = target_frame_height;
++  return bongocat_error_t::BONGOCAT_SUCCESS;
++}
++
+ created_result_t<bongocat_sprite_sheet_t>
+ load_bongocat_anim([[maybe_unused]] size_t anim_index, get_sprite_callback_t get_sprite, size_t embedded_images_count,
+                     load_bongocat_anim_type_t type,
+@@ -106,6 +150,16 @@ load_bongocat_anim([[maybe_unused]] size_t anim_index, get_sprite_callback_t get
+   if (sprite_sheet_error != bongocat_error_t::BONGOCAT_SUCCESS) [[unlikely]] {
+     return sprite_sheet_error;
+   }
++  if (type == load_bongocat_anim_type_t::SVG) {
++    // Remove the SVG impact marks before scaling so their antialiased edges
++    // cannot be blended into dark, low-alpha blobs below the resting paws.
++    tint_bongocat_body(sprite_sheet.image);
++    const auto downsample_error = downsample_bongocat_sprite_sheet(sprite_sheet);
++    if (downsample_error != bongocat_error_t::BONGOCAT_SUCCESS) [[unlikely]] {
++      BONGOCAT_LOG_ERROR("Failed to downsample supersampled Bongo Cat sprite sheet");
++      return downsample_error;
++    }
++  }
+
+   bongocat_sprite_sheet_t ret;
+   ret.image = bongocat::move(sprite_sheet.image);
+@@ -231,9 +282,10 @@ created_result_t<bongocat_sprite_sheet_t> load_bongocat_sprite_sheet(const anima
+   case BONGOCAT_ANIM_INDEX:
+     if constexpr (features::EnableBongocatSvg) {
+       const int cat_height = ctx.shm->cat_height_phys;
+-      const auto svg_params = anim_bongocat_get_svg_params(cat_height);
+-      const auto svg_cropping = anim_bongocat_get_svg_cropping(cat_height);
++      const int render_height = cat_height * 2;
++      const auto svg_params = anim_bongocat_get_svg_params(render_height);
++      const auto svg_cropping = anim_bongocat_get_svg_cropping(render_height);
+       return load_bongocat_anim(BONGOCAT_ANIM_INDEX, get_bongocat_sprite_svg, BONGOCAT_EMBEDDED_IMAGES_COUNT, load_bongocat_anim_type_t::SVG, svg_params, svg_cropping);
+     } else {
+       return load_bongocat_anim(BONGOCAT_ANIM_INDEX, get_bongocat_sprite, BONGOCAT_EMBEDDED_IMAGES_COUNT, load_bongocat_anim_type_t::PNG, {0, 0, 0, 0}, {0, 0, 0, 0});

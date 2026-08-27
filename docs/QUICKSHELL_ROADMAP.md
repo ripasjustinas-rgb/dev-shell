@@ -347,12 +347,48 @@ Pridėti vieną persistuojamą `calmMode` nustatymą, kuris:
 Calm mode turi būti pasiekiamas per command palette ir, jei yra vietos,
 control center.
 
+### 6.5 Bongo Cat panelėje
+
+- Pasirinktinai paleisti `wayland-vpets` Bongo Cat po wallpaper mygtuko ir
+  atnaujinimų skaičiaus, rezervuojant tik jo horizontalų plotį. Esama
+  wallpaper → updates seka lieka nepakitusi.
+- Cat ir jo Wayland overlay turi tilpti į esamą 48 px panelės aukštį. Panelės
+  aukštis, `exclusiveZone` ir darbui paliktas ekrano plotas dėl jo nesikeičia.
+- Poziciją, monitorių, dydį ir rezervuojamą plotį aprašo laptopo bei desktopo
+  profiliai; QML ir proceso paleidimo logika lieka bendra.
+- Abiejuose profiliuose cat yra 40 px aukščio ir turi 100 px rezervuojamą
+  horizontalų plotį, nekeičiant 48 px panelės aukščio.
+- Desktop'e cat rodomas tik profilyje nurodytame pagrindiniame monitoriuje,
+  kituose monitoriuose nepaliekant tuščio tarpo.
+- Kai `wpets` nėra įdiegtas, komponentas ir jo tarpas automatiškai pasislepia.
+  Calm mode ir reduced motion sustabdo procesą nekeisdami panelės išdėstymo.
+- Klaviatūros įrenginys nustatomas lokaliame, į repo neįtrauktame override
+  faile; iš jo nepriimami padėties parametrai, o debug režimas priverstinai
+  lieka išjungtas.
+- Numatytoji Bongo Cat būsena yra veidrodinėta, ramybės metu abi letenos
+  nuleistos, o idle seka kas maždaug 7,4 s trumpam parodo užmerktų akių kadrą.
+  Po 5 min. neveiklos cat pereina į nuolatinę sleep būseną.
+- Lokalioje wpets versijoje grayscale kūnas tonuojamas dabartinės `matugen`
+  paletės `secondary` spalva; pakeitus wallpaperį servisas persikrauna, bet
+  paw mapping, animacijų būsena ir panelės geometrija nesikeičia.
+- Greitai spaudžiant tos pačios klaviatūros pusės klavišus, jai priskirta
+  letena lieka nuleista iki input burst pabaigos ir neįterpia abiejų letenų
+  pakėlimo kadrų.
+- Po letenomis buvę SVG smūgio brūkšniai pašalinami prieš sprite sumažinimą,
+  kad jų kraštai nebūtų įmaišyti kaip tamsūs artefaktai ant šviesaus fono.
+- Mažinant SVG iki panelės dydžio naudojamas bilinear antialiasing, kad galvos
+  ir letenų kontūrai neliktų laiptuoti. Bongo sprite'ai rasterizuojami 2×
+  raiška; kiekvienas animacijos kadras bilinear būdu mažinamas atskirai, kad
+  visų kadrų pixel grid išliktų vienodas ir cat nejudėtų į šonus per 1 px.
+
 ### Priėmimo kriterijai
 
 - Visi efektai naudoja temos tokenus ir atrodo nuosekliai su SDDM/Kitty.
 - Calm mode būsena išlieka po login ir shell reload.
 - Calm mode išjungus vizualizerį nelieka veikiančio `cava` proceso.
 - Nė vienas efektas neužstoja teksto, tooltip ar paspaudimo zonų.
+- Bongo Cat neprideda antro ekrano `exclusiveZone` ir nepakeičia panelės
+  aukščio nei laptopo, nei desktopo profilyje.
 
 ## Siūloma failų struktūra
 

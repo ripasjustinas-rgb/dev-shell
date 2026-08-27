@@ -7,7 +7,7 @@ import qs.theme
 Rectangle {
     id: root
     property string count: "…"
-    implicitWidth: count === "0" ? 30 : Math.max(40, countText.implicitWidth + 12)
+    implicitWidth: Math.max(30, countText.implicitWidth + 10)
     implicitHeight: 26
     radius: Theme.radius
     color: mouse.containsMouse ? Theme.surfaceHover : Theme.surface
@@ -22,7 +22,7 @@ Rectangle {
         text: root.count === "0" ? "󰚰" : "󰚰 " + root.count
         color: root.count === "0" ? Theme.muted : Theme.warningColor
         font.family: Theme.fontFamily
-        font.pixelSize: 14
+        font.pixelSize: 15
     }
 
     MouseArea {

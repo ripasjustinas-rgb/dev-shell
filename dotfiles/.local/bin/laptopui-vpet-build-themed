@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/yay/wpets"
+install_dir="$HOME/.local/lib/laptopui"
+script_path=$(readlink -f -- "${BASH_SOURCE[0]}")
+repo_dir=$(cd -- "$(dirname -- "$script_path")/../../.." && pwd -P)
+patch_files=(
+  "$repo_dir/patches/wpets-bongocat-body-color.patch"
+  "$repo_dir/patches/wpets-bongocat-supersample.patch"
+)
+
+command -v cmake >/dev/null 2>&1 || { printf 'missing command: cmake\n' >&2; exit 1; }
+command -v patch >/dev/null 2>&1 || { printf 'missing command: patch\n' >&2; exit 1; }
+for patch_file in "${patch_files[@]}"; do
+  [[ -r "$patch_file" ]] || { printf 'missing patch: %s\n' "$patch_file" >&2; exit 1; }
+done
+
+archive=""
+while IFS= read -r candidate; do
+  archive=$candidate
+done < <(find "$cache_dir" -maxdepth 1 -type f -name 'wayland-vpets-*.tar.gz' -print 2>/dev/null | sort -V)
+[[ -n "$archive" ]] || {
+  printf 'wpets source archive not found in %s; rebuild wpets with yay first\n' "$cache_dir" >&2
+  exit 1
+}
+
+work_dir=$(mktemp -d "${TMPDIR:-/tmp}/laptopui-wpets.XXXXXX")
+cleanup() { rm -rf -- "$work_dir"; }
+trap cleanup EXIT
+
+bsdtar -xf "$archive" -C "$work_dir"
+source_dir=$(find "$work_dir" -mindepth 1 -maxdepth 1 -type d -name 'wayland-vpets-*' -print -quit)
+[[ -n "$source_dir" ]] || { printf 'could not find extracted wpets source\n' >&2; exit 1; }
+for patch_file in "${patch_files[@]}"; do
+  patch -d "$source_dir" -p1 < "$patch_file"
+done
+
+cmake -S "$source_dir" -B "$work_dir/build" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DFEATURE_LAZY_LOAD_ASSETS=ON \
+  -DFEATURE_MULTI_VERSIONS=OFF \
+  -DSKIP_CPM=ON \
+  -DGENERATE_PROTOCOLS=OFF \
+  -Wno-dev
+cmake --build "$work_dir/build" --target bongocat --parallel "$(nproc)"
+
+install -Dm755 "$work_dir/build/bongocat" "$install_dir/wpets-themed"
+printf 'installed themed wpets: %s\n' "$install_dir/wpets-themed"

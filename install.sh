@@ -4,8 +4,10 @@ set -Eeuo pipefail
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 home_dir=${HOME:?HOME must be set}
 state_dir="${XDG_STATE_HOME:-$home_dir/.local/state}/dev-shell"
+laptopui_state_dir="${XDG_STATE_HOME:-$home_dir/.local/state}/laptopui"
 backup_root="$state_dir/backups"
 active_profile_file="$state_dir/active-profile"
+vpet_profile_file="$laptopui_state_dir/vpet-profile.env"
 profile=""
 dry_run=0
 
@@ -69,6 +71,7 @@ manifest() {
     "$repo_dir/dotfiles/.config/systemd/user/laptopui-hypridle.service" "$home_dir/.config/systemd/user/laptopui-hypridle.service" \
     "$repo_dir/dotfiles/.config/systemd/user/laptopui-lid-inhibit.service" "$home_dir/.config/systemd/user/laptopui-lid-inhibit.service" \
     "$repo_dir/dotfiles/.config/systemd/user/laptopui-clipboard.service" "$home_dir/.config/systemd/user/laptopui-clipboard.service" \
+    "$repo_dir/dotfiles/.config/systemd/user/laptopui-vpet.service" "$home_dir/.config/systemd/user/laptopui-vpet.service" \
     "$repo_dir/dotfiles/.config/waybar" "$home_dir/.config/waybar" \
     "$repo_dir/dotfiles/.zprofile" "$home_dir/.zprofile" \
     "$repo_dir/dotfiles/.zshrc" "$home_dir/.zshrc" \
@@ -87,6 +90,8 @@ manifest() {
     "$repo_dir/dotfiles/.local/bin/laptopui-clipboard-watch" "$home_dir/.local/bin/laptopui-clipboard-watch" \
     "$repo_dir/dotfiles/.local/bin/laptopui-clipboard-preview" "$home_dir/.local/bin/laptopui-clipboard-preview" \
     "$repo_dir/dotfiles/.local/bin/laptopui-screenshot" "$home_dir/.local/bin/laptopui-screenshot" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-vpet" "$home_dir/.local/bin/laptopui-vpet" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-vpet-build-themed" "$home_dir/.local/bin/laptopui-vpet-build-themed" \
     "$repo_dir/dotfiles/.local/bin/laptopui-lock" "$home_dir/.local/bin/laptopui-lock" \
     "$repo_dir/dotfiles/.local/bin/laptopui-reload" "$home_dir/.local/bin/laptopui-reload" \
     "$repo_dir/dotfiles/.local/bin/laptopui-lid" "$home_dir/.local/bin/laptopui-lid" \
@@ -105,6 +110,11 @@ check() {
   load_profile
   local failed=0 source target package
   [[ -f "$repo_dir/PLAN.md" ]] || { note 'missing PLAN.md'; failed=1; }
+  [[ "${VPET_ENABLED:-}" =~ ^[01]$ ]] || { note 'VPET_ENABLED must be 0 or 1'; failed=1; }
+  [[ "${VPET_MONITOR:-}" =~ ^[A-Za-z0-9._-]+$ ]] || { note 'VPET_MONITOR must be a concrete output name'; failed=1; }
+  [[ "${VPET_HEIGHT:-}" =~ ^[0-9]+$ && "${VPET_HEIGHT:-0}" -ge 8 && "${VPET_HEIGHT:-0}" -le 48 ]] || { note 'VPET_HEIGHT must fit inside the 48 px panel'; failed=1; }
+  [[ "${VPET_SLOT_WIDTH:-}" =~ ^[0-9]+$ && "${VPET_SLOT_WIDTH:-0}" -ge 1 ]] || { note 'VPET_SLOT_WIDTH must be a positive integer'; failed=1; }
+  [[ "${VPET_X_OFFSET:-}" =~ ^-?[0-9]+$ && "${VPET_Y_OFFSET:-}" =~ ^-?[0-9]+$ ]] || { note 'VPET offsets must be integers'; failed=1; }
   while IFS=$'\t' read -r source target; do
     [[ -e "$source" || -L "$source" ]] || { note "missing source: $source"; failed=1; }
   done < <(manifest)
@@ -168,15 +178,32 @@ install() {
     else
       : > "$backup_dir/active-profile.absent"
     fi
-    mkdir -p -- "$state_dir"
+    if [[ -f "$vpet_profile_file" ]]; then
+      cp -- "$vpet_profile_file" "$backup_dir/vpet-profile.before"
+    else
+      : > "$backup_dir/vpet-profile.absent"
+    fi
+    mkdir -p -- "$state_dir" "$laptopui_state_dir"
     printf '%s\n' "$profile" > "$active_profile_file"
+    write_vpet_profile
     printf '%s\n' "$profile" > "$backup_dir/profile"
     refresh_clipboard_watcher
     note "backup id: $backup_id"
     note "active profile: $profile"
   else
     note "dry-run: write active profile '$profile' to $active_profile_file"
+    note "dry-run: write vpet placement to $vpet_profile_file"
   fi
+}
+
+write_vpet_profile() {
+  printf '%s\n' \
+    "VPET_ENABLED=$VPET_ENABLED" \
+    "VPET_MONITOR=$VPET_MONITOR" \
+    "VPET_HEIGHT=$VPET_HEIGHT" \
+    "VPET_SLOT_WIDTH=$VPET_SLOT_WIDTH" \
+    "VPET_X_OFFSET=$VPET_X_OFFSET" \
+    "VPET_Y_OFFSET=$VPET_Y_OFFSET" > "$vpet_profile_file"
 }
 
 packages() {
@@ -227,6 +254,12 @@ status() {
   else
     printf 'missing (run install)\n'
   fi
+  printf 'Wayland vPet: '
+  if command -v wpets-all >/dev/null 2>&1 || command -v wpets >/dev/null 2>&1; then
+    if [[ -r "$vpet_profile_file" ]]; then printf 'available, profile configured\n'; else printf 'available, profile not installed\n'; fi
+  else
+    printf 'optional dependency not installed\n'
+  fi
   printf 'active profile: '; [[ -f "$active_profile_file" ]] && sed -n '1p' "$active_profile_file" || printf 'not selected\n'
   printf 'backups: '; [[ -d "$backup_root" ]] && find "$backup_root" -mindepth 1 -maxdepth 1 -type d -printf '%f ' | sort || true; printf '\n'
 }
@@ -252,6 +285,12 @@ restore() {
     run cp -- "$backup_dir/active-profile.before" "$active_profile_file"
   elif [[ -f "$backup_dir/active-profile.absent" && -f "$active_profile_file" ]]; then
     run rm -- "$active_profile_file"
+  fi
+  if [[ -f "$backup_dir/vpet-profile.before" ]]; then
+    run mkdir -p -- "$laptopui_state_dir"
+    run cp -- "$backup_dir/vpet-profile.before" "$vpet_profile_file"
+  elif [[ -f "$backup_dir/vpet-profile.absent" && -f "$vpet_profile_file" ]]; then
+    run rm -- "$vpet_profile_file"
   fi
   note "restored: $backup_id"
 }

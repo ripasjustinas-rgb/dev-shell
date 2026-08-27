@@ -27,6 +27,8 @@ Dabartinė versija apima:
 - persistuojamą DND bei calm mode; calm mode sustabdo `cava` procesą.
 - wallpaper pickerį kairėje panelės pusėje: miniatiūrų tinklelis, konkretus
   pasirinkimas bei „Next“ ir „Random“ veiksmai.
+- pasirinktinį `wayland-vpets` Bongo Cat po wallpaper ir update mygtukų,
+  reaguojantį į klaviatūrą ir nedidinantį panelės `exclusiveZone`.
 
 ## 0. Saugumo taisyklės
 
@@ -198,6 +200,10 @@ starto metu:
 - paleidžiamas vienas `qs --no-duplicate --config laptopui` procesas;
 - per `systemd --user` paleidžiami `laptopui-hypridle.service`,
   `laptopui-lid-inhibit.service` ir `laptopui-clipboard.service`.
+- jei įdiegtas pasirinktinis `wpets`, Quickshell paleidžia
+  `laptopui-vpet.service`; cat telpa esamoje panelėje ir papildomo ekrano
+  aukščio nerezervuoja. Jei sukurtas `~/.local/lib/laptopui/wpets-themed`,
+  jo kūnas naudoja dabartinės `matugen` paletės `secondary` spalvą.
 
 Patikrink:
 
@@ -218,6 +224,140 @@ jų rodoma unavailable, patikrink helperį ir ryšį:
 
 ```sh
 ~/.local/bin/laptopui-weather --forecast
+```
+
+### Pasirinktinis Bongo Cat
+
+Kairės panelės seka yra penki workspace'ai, wallpaper mygtukas, update
+counteris ir Bongo Cat. Cat piešiamas atskirame skaidriame Wayland overlay,
+tačiau QML rezervuoja jo horizontalų plotį. Overlay aukštis lieka toks pats
+kaip panelės — 48 px — todėl naudojamas ekrano plotas nesumažėja.
+
+`wpets` yra AUR paketas ir nėra bendrame `pacman` manifeste:
+
+```sh
+yay -S wpets
+sudo usermod -a -G input "$USER"
+```
+
+Pasirinktinis teminis variantas išsaugo native Bongo Cat paw mapping, bet
+grayscale kūną paleidimo metu tonuoja iš `colors.json`. Jis statomas iš AUR
+cache esančio to paties wpets source archive:
+
+```sh
+sudo pacman --needed -S cmake
+laptopui-vpet-build-themed
+```
+
+Rezultatas įrašomas į `~/.local/lib/laptopui/wpets-themed`; helperis jį renkasi
+pirmiau už `/usr/bin/wpets-all`. `laptopui-theme-generate` po naujos paletės
+įrašymo perstartuoja servisą, todėl nauja spalva pritaikoma iškart. wpets
+atnaujinus builderį reikia paleisti dar kartą.
+
+`profiles/laptop/profile.env` nustato `eDP-1`, 40 px cat ir 9 px vertikalų
+offset; `profiles/desktop/profile.env` nustato `DP-3`, 40 px cat ir −2 px
+vertikalų offset. Abiejų profilių 232 px horizontalus offset pritaikytas
+galutinei wallpaper → updates → cat sekai. `./install.sh install --profile ...` šias
+reikšmes įrašo į `~/.local/state/laptopui/vpet-profile.env`.
+
+Klaviatūrą kiekviename hoste aptik atskirai. `wpets-find-devices` komentare
+parodo `/dev/input/eventN`; į lokalų, netrackinamą failą įrašyk kelią, ne
+įrenginio pavadinimą:
+
+```sh
+mkdir -p ~/.config/laptopui
+printf '%s\n' 'keyboard_device=/dev/input/eventN' \
+  > ~/.config/laptopui/vpet.local.conf
+systemctl --user daemon-reload
+systemctl --user restart laptopui-vpet.service
+```
+
+Servisas per `newgrp input` įeina tik į vartotojui jau suteiktą grupę. Jis
+nekoreguoja `/dev/input` teisių ir nenaudoja root proceso. Patikrink:
+
+```sh
+systemctl --user status laptopui-vpet.service
+journalctl --user -u laptopui-vpet.service -n 50 --no-pager
+```
+
+Žurnale turi būti `Opened input device` ir sėkmingas `1/1 input devices`
+rezultatas. Jei `wpets` neįdiegtas, QML nerodo nei cat, nei tuščio tarpo. Calm
+mode arba reduced motion sustabdo servisą, bet nekeičia panelės išdėstymo.
+Numatytoji išvaizda yra veidrodinėta; ramybės kadre abi letenos nuleistos,
+idle seka kas maždaug 7,4 s trumpam parodo užmerktų akių kadrą, o po 5 min.
+neveiklos cat pereina į nuolatinę sleep būseną. Teminis binary keičia tik
+grayscale kūno spalvą į paletės
+`secondary`; rausvos detalės, juodi kontūrai ir animacijos lieka originalūs.
+Same-side typing kadrai lokaliai stabilizuoti: greito input burst metu wpets
+nebekaitalioja aktyvios letenos su abiejų letenų pakėlimo kadru.
+Po letenomis buvę raudoni SVG impact brūkšniai pašalinami prieš sprite
+sumažinimą, kad jų kraštai nebūtų įmaišyti kaip tamsūs artefaktai ant šviesaus
+wallpaperio. `enable_antialiasing=1` įjungia bilinear scaling, todėl mažo cat
+letenų ir galvos kontūrai lieka glotnūs. Teminis buildas Bongo SVG pirmiausia
+rasterizuoja 2× raiška ir tik tada bilinear būdu sumažina iki galutinio dydžio.
+
+#### Kaip atkuriamos teminės ir išvalytos Bongo Cat sprite'ų versijos
+
+Visa lokali wpets elgsena laikoma dviejuose repo patch'uose, todėl jos nereikia
+rankomis kartoti AUR source medyje:
+
+- `patches/wpets-bongocat-body-color.patch` prideda temos spalvą, idle/resting
+  kadrus, same-side typing stabilizavimą ir įjungia idle animaciją;
+- `patches/wpets-bongocat-supersample.patch` prideda 2× SVG rasterizavimą,
+  bilinear sumažinimą ir nustato teisingą artefaktų šalinimo eiliškumą.
+
+Temos spalvos kelias yra toks:
+
+1. `laptopui-theme-generate` iš matugen rezultato įrašo
+   `~/.local/state/laptopui/colors.json`; reikalinga reikšmė yra `.secondary`
+   ir turi būti `#RRGGBB` formato.
+2. `laptopui-vpet` patikrina reikšmę su `jq` ir eksportuoja ją kaip
+   `WPETS_BONGOCAT_BODY_COLOR` prieš paleisdamas teminį binary.
+3. `parse_bongocat_body_color()` paverčia reikšmę į RGB. Sprite pikseliuose
+   tonuojami tik beveik grayscale pikseliai, kurių didžiausio ir mažiausio RGB
+   kanalo skirtumas neviršija 2. Jų šviesumas dauginamas iš `.secondary`
+   spalvos, todėl išlieka originalus šešėliavimas. Rausvos letenų detalės
+   neliečiamos, o juodas kontūras lieka juodas.
+4. Sugeneravus naują paletę, `laptopui-theme-generate` vykdo
+   `systemctl --user try-restart laptopui-vpet.service`; nauja spalva todėl
+   pritaikoma be wpets perkompiliavimo.
+
+Tamsūs blokai po nuleistomis letenomis nėra kontūro dalis. Originaliuose
+wpets SVG ten yra raudonos smūgio linijos. Jų šalinimo tvarka yra svarbi:
+
+1. Dar pilnos 2× raiškos RGBA sprite'e aptinkami aiškiai raudoni pikseliai
+   (`R > 140`, `R > G + 70`, `R > B + 70`) ir visi keturi jų kanalai
+   nustatomi į nulį.
+2. Tik po to kiekvienas iš penkių kadrų atskirai, nuo savo lokalaus `(0, 0)`,
+   bilinear būdu sumažinamas iki vienodo galutinio kadro dydžio. Negalima vienu
+   kartu mažinti viso sprite sheet: 40 px cat atveju 2× kadras yra 145 px
+   pločio, todėl penkių kadrų 725 px plotis dalijant iš dviejų palieka apvalinimo
+   likutį. Dėl jo keistųsi sampling fazė ir tarp kadrų atsirastų 1 px šoninis
+   poslinkis. Atskiras mažinimas visus kadrus įrašo į tą patį 72 px tinklelį.
+   Jei smūgio linijos būtų šalinamos po sumažinimo, filtras jų kraštus jau būtų
+   sumaišęs su skaidriu fonu; likę mažo alpha tamsūs pikseliai ir sudarytų
+   matomus blob'us.
+3. `enable_antialiasing=1` paliekamas runtime konfigūracijoje. Jis glotnina
+   galutinį piešimą, o 2× rasterizavimas glotnina patį mažą SVG sprite'ą.
+
+Patch'ų tvarka builderyje taip pat yra fiksuota: pirmiausia taikomas
+`wpets-bongocat-body-color.patch`, tada `wpets-bongocat-supersample.patch`, nes
+antras patch'as kviečia pirmame pridėtą pikselių apdorojimo funkciją. Po wpets
+atnaujinimo arba pakeitus patch'us atkurk binary ir servisą:
+
+```sh
+laptopui-vpet-build-themed
+systemctl --user restart laptopui-vpet.service
+```
+
+Patikrink, kad žurnale nėra sprite load klaidų, `vpet.conf` turi
+`enable_antialiasing=1`, o ant šviesaus wallpaperio po abiem resting letenomis
+lieka visiškai skaidrus plotas:
+
+```sh
+rg '^(cat_height|cat_y_offset|enable_antialiasing)=' \
+  ~/.local/state/laptopui/vpet.conf
+journalctl --user -u laptopui-vpet.service -n 50 --no-pager
 ```
 
 ### Wallpaper pickeris
