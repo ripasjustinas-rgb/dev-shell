@@ -15,7 +15,8 @@ Dabartinė versija apima:
 - Kitty, Zsh, Oh My Zsh ir Starship;
 - fiksuotą, atskirai previewinamą LaptopUI SDDM temą;
 - tokį pat SDDM stilių atkartojantį `hyprlock`;
-- `hypridle`: 5 min. lock, 10 min. DPMS off, 20 min. suspend;
+- `hypridle`: baterijoje 5 min. lock, 10 min. DPMS off ir 20 min. suspend;
+  prijungus įkroviklį tik 10 min. lock;
 - laptopo lid eigą: ekranas off iškart, suspend po 5 min., atidarius atšaukiama.
 - `SUPER+A` clipboard history su tekstu ir vaizdų thumbnail per `cliphist`.
 - `SUPER+S` viso ekrano ir `SUPER+SHIFT+S` regiono screenshot'ai į
@@ -232,6 +233,9 @@ Kairės panelės seka yra penki workspace'ai, wallpaper mygtukas, update
 counteris ir Bongo Cat. Cat piešiamas atskirame skaidriame Wayland overlay,
 tačiau QML rezervuoja jo horizontalų plotį. Overlay aukštis lieka toks pats
 kaip panelės — 48 px — todėl naudojamas ekrano plotas nesumažėja.
+wpets paviršius naudoja `overlay_layer=top`, kaip ir įprasta panelė, todėl
+fullscreen langas uždengia ir panelę, ir cat. `overlay` sluoksnio čia naudoti
+negalima, nes jis tyčia liktų matomas virš fullscreen lango.
 
 `wpets` yra AUR paketas ir nėra bendrame `pacman` manifeste:
 
@@ -254,8 +258,8 @@ pirmiau už `/usr/bin/wpets-all`. `laptopui-theme-generate` po naujos paletės
 įrašymo perstartuoja servisą, todėl nauja spalva pritaikoma iškart. wpets
 atnaujinus builderį reikia paleisti dar kartą.
 
-`profiles/laptop/profile.env` nustato `eDP-1`, 40 px cat ir 9 px vertikalų
-offset; `profiles/desktop/profile.env` nustato `DP-3`, 40 px cat ir −2 px
+`profiles/laptop/profile.env` nustato `eDP-1`, 40 px cat ir 8 px vertikalų
+offset; `profiles/desktop/profile.env` nustato `DP-3`, 40 px cat ir −3 px
 vertikalų offset. Abiejų profilių 232 px horizontalus offset pritaikytas
 galutinei wallpaper → updates → cat sekai. `./install.sh install --profile ...` šias
 reikšmes įrašo į `~/.local/state/laptopui/vpet-profile.env`.
@@ -450,9 +454,9 @@ SUPER + L
 
 Aktyvi konfigūracija:
 
-- 5 min. be aktyvumo — `hyprlock`;
-- 10 min. — visi ekranai DPMS off;
-- 20 min. — suspend;
+- naudojant bateriją: 5 min. be aktyvumo — `hyprlock`, 10 min. — DPMS off,
+  20 min. — suspend;
+- prijungus įkroviklį: 10 min. — `hyprlock`; DPMS off ir idle suspend nevykdomi;
 - prieš suspend lock ekranas privalo būti pilnai užsikrovęs;
 - po resume ekranai vėl įjungiami.
 

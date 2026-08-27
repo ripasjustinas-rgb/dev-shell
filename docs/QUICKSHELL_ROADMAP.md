@@ -354,6 +354,8 @@ control center.
   wallpaper → updates seka lieka nepakitusi.
 - Cat ir jo Wayland overlay turi tilpti į esamą 48 px panelės aukštį. Panelės
   aukštis, `exclusiveZone` ir darbui paliktas ekrano plotas dėl jo nesikeičia.
+- Cat paviršius naudoja Wayland `top`, ne `overlay`, sluoksnį, kad fullscreen
+  langai jį uždengtų kartu su panele.
 - Poziciją, monitorių, dydį ir rezervuojamą plotį aprašo laptopo bei desktopo
   profiliai; QML ir proceso paleidimo logika lieka bendra.
 - Abiejuose profiliuose cat yra 40 px aukščio ir turi 100 px rezervuojamą

@@ -19,9 +19,13 @@ laptopui-lock
 
 ## Idle eiga
 
-- po 5 min. neveiklumo — užrakinama sesija;
-- po 10 min. — išjungiami ekranai, o aktyvumas juos vėl įjungia;
-- po 20 min. — kompiuteris suspenduojamas;
+- naudojant bateriją po 5 min. neveiklumo užrakinama sesija, po 10 min.
+  išjungiami ekranai, o po 20 min. kompiuteris suspenduojamas;
+- prijungus įkroviklį po 10 min. užrakinama sesija, tačiau ekranai neišjungiami
+  ir kompiuteris dėl neveiklumo nesuspenduojamas;
+- kiekvienas idle veiksmas patikrina tuo metu naudojamą maitinimo šaltinį, todėl
+  prijungus ar atjungus įkroviklį taikoma atitinkama eiga;
+- aktyvumas po DPMS išjungimo ekranus vėl įjungia;
 - prieš kiekvieną suspend `hypridle` pirmiausia paleidžia `hyprlock` ir laiko
   sleep inhibitorių, kol Wayland patvirtina užrakintą sesiją;
 - po resume ekranai įjungiami.

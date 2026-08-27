@@ -59,7 +59,7 @@ printf '%s\n' \
   'overlay_height=48' \
   'overlay_position=top' \
   'overlay_opacity=0' \
-  'overlay_layer=overlay' \
+  'overlay_layer=top' \
   'animation_name=bongocat' \
   'mirror_x=1' \
   'idle_frame=3' \

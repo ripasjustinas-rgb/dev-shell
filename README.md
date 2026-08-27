@@ -20,7 +20,8 @@ SDDM login ekranui paruošta atskirai previewinama ir atkuriama LaptopUI tema.
 Jos saugi diegimo eiga aprašyta [docs/SDDM.md](docs/SDDM.md); tema nėra
 aktyvuojama kartu su įprastu dotfiles diegimu.
 
-Tą patį wallpaperį ir paletę naudojantis `hyprlock`, 5/10/20 min. idle eiga
+Tą patį wallpaperį ir paletę naudojantis `hyprlock`, nuo maitinimo šaltinio
+priklausanti idle eiga
 bei atidėtas lid suspend aprašyti [docs/LOCK_IDLE.md](docs/LOCK_IDLE.md).
 
 Waybar konfigūracija išlaikoma tik kaip avarinis fallback. Aktyvus shell yra

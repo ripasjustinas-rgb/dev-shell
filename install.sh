@@ -90,6 +90,7 @@ manifest() {
     "$repo_dir/dotfiles/.local/bin/laptopui-clipboard-watch" "$home_dir/.local/bin/laptopui-clipboard-watch" \
     "$repo_dir/dotfiles/.local/bin/laptopui-clipboard-preview" "$home_dir/.local/bin/laptopui-clipboard-preview" \
     "$repo_dir/dotfiles/.local/bin/laptopui-screenshot" "$home_dir/.local/bin/laptopui-screenshot" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-idle" "$home_dir/.local/bin/laptopui-idle" \
     "$repo_dir/dotfiles/.local/bin/laptopui-vpet" "$home_dir/.local/bin/laptopui-vpet" \
     "$repo_dir/dotfiles/.local/bin/laptopui-vpet-build-themed" "$home_dir/.local/bin/laptopui-vpet-build-themed" \
     "$repo_dir/dotfiles/.local/bin/laptopui-lock" "$home_dir/.local/bin/laptopui-lock" \
