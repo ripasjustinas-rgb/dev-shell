@@ -21,16 +21,28 @@ Item {
     property real brightnessLevel: 0
     property bool sinkMuted: false
     property bool sourceMuted: false
+    property bool advancedAudio: false
     property string pendingVolumeTarget: ""
     property real pendingVolumeLevel: 0
     property real pendingBrightnessLevel: 0
 
-    onOpenChanged: if (!open) closing = true
+    onOpenChanged: {
+        if (!open) {
+            closing = true
+            advancedAudio = false
+            streamModel.clear()
+        }
+    }
 
     function refresh() {
-        if (Capabilities.hasAudioSink) sinkQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
-        if (Capabilities.hasAudioSource) sourceQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"])
+        if (Capabilities.hasAudioSink) {
+            sinkQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]);
+        }
+        if (Capabilities.hasAudioSource) {
+            sourceQuery.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"]);
+        }
         if (Capabilities.hasBacklight && Capabilities.hasBrightnessctl) brightnessQuery.exec(["brightnessctl", "-m"])
+        if (advancedAudio && Capabilities.hasAudioSink) streamQuery.exec(["laptopui-audio-streams"])
     }
     function parseVolume(text, microphone) {
         const match = text.match(/Volume:\s+([0-9.]+)(\s+\[MUTED\])?/)
@@ -58,13 +70,23 @@ Item {
     }
     function mute(target) { Quickshell.execDetached(["wpctl", "set-mute", target, "toggle"]); delayedRefresh.restart() }
     function setBrightness(level) { Quickshell.execDetached(["brightnessctl", "set", Math.round(level) + "%"]); delayedRefresh.restart() }
+    function parseStreams(text) {
+        let streams = []
+        try { streams = JSON.parse(text.trim() || "[]") } catch (error) { streams = [] }
+        streamModel.clear()
+        for (const stream of streams) streamModel.append(stream)
+    }
+
+    ListModel { id: streamModel }
 
     Process { id: sinkQuery; stdout: StdioCollector { onStreamFinished: root.parseVolume(text, false) } }
     Process { id: sourceQuery; stdout: StdioCollector { onStreamFinished: root.parseVolume(text, true) } }
     Process { id: brightnessQuery; stdout: StdioCollector { onStreamFinished: { const p = text.trim().split(","); root.brightness = p.length > 3 ? p[3].trim() : "—"; root.brightnessLevel = p.length > 3 ? Number.parseFloat(p[3]) : 0 } } }
+    Process { id: streamQuery; stdout: StdioCollector { onStreamFinished: root.parseStreams(text) } }
     Timer { id: volumeApply; interval: 70; onTriggered: { Quickshell.execDetached(["wpctl", "set-volume", root.pendingVolumeTarget, Math.round(root.pendingVolumeLevel) + "%"]); delayedRefresh.restart() } }
     Timer { id: brightnessApply; interval: 70; onTriggered: root.setBrightness(root.pendingBrightnessLevel) }
     Timer { id: delayedRefresh; interval: 180; onTriggered: root.refresh() }
+    Timer { interval: 2000; running: root.open && root.advancedAudio; repeat: true; onTriggered: streamQuery.exec(["laptopui-audio-streams"]) }
 
     Variants {
         model: Quickshell.screens
@@ -87,7 +109,7 @@ Item {
                 width: 390
                 height: Math.min(
                     parent.height - Theme.panelHeight - 28,
-                    Math.max(410, 365 + root.clipboardHeight)
+                    Math.max(410, 365 + root.clipboardHeight + (root.advancedAudio ? Math.min(174, 50 + streamModel.count * 46) : 0))
                 )
                 anchors.top: parent.top
                 anchors.right: parent.right
@@ -134,6 +156,78 @@ Item {
                             MouseArea { anchors.fill: parent; onClicked: root.closeRequested() } }
                     }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
+                    Rectangle {
+                        visible: Capabilities.hasAudioSink
+                        Layout.fillWidth: true
+                        implicitHeight: 32
+                        radius: 9
+                        color: advancedAudioMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 9
+                            anchors.rightMargin: 9
+                            Text { text: "󰓃"; color: root.advancedAudio ? Theme.accent : Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 14 }
+                            Text { text: "Application mixer"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 11; font.bold: root.advancedAudio }
+                            Item { Layout.fillWidth: true }
+                            Text { text: root.advancedAudio ? "⌃" : "⌄"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 15 }
+                        }
+                        MouseArea {
+                            id: advancedAudioMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.advancedAudio = !root.advancedAudio
+                                if (root.advancedAudio) streamQuery.exec(["laptopui-audio-streams"])
+                            }
+                        }
+                    }
+                    Item {
+                        visible: root.advancedAudio
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: visible ? Math.min(138, Math.max(38, streamModel.count * 46)) : 0
+                        clip: true
+                        Text {
+                            visible: streamModel.count === 0
+                            anchors.centerIn: parent
+                            text: "No applications are playing audio"
+                            color: Theme.muted
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 11
+                        }
+                        Flickable {
+                            anchors.fill: parent
+                            visible: streamModel.count > 0
+                            contentHeight: streamColumn.implicitHeight
+                            boundsBehavior: Flickable.StopAtBounds
+                            clip: true
+                            Column {
+                                id: streamColumn
+                                width: parent.width
+                                spacing: 0
+                                Repeater {
+                                    model: streamModel
+                                    delegate: ControlRow {
+                                        required property string streamId
+                                        required property string name
+                                        required property real streamLevel
+                                        required property bool streamMuted
+                                        width: streamColumn.width
+                                        icon: streamMuted ? "󰖁" : "󰎆"
+                                        title: name
+                                        titleWidth: 106
+                                        value: Math.round(streamLevel) + "%"
+                                        level: streamLevel
+                                        muteAvailable: true
+                                        muted: streamMuted
+                                        muteIcon: streamMuted ? "󰖁" : "󰕾"
+                                        onLevelRequested: level => root.queueVolume(streamId, level)
+                                        onMuteRequested: root.mute(streamId)
+                                    }
+                                }
+                            }
+                        }
+                    }
                     ControlRow { visible: Capabilities.hasAudioSink; icon: root.sinkMuted ? "󰖁" : "󰕾"; title: "Volume"; value: root.sinkVolume; level: root.sinkLevel; muted: root.sinkMuted; muteAvailable: true; muteIcon: root.sinkMuted ? "󰖁" : "󰕾"; deviceSelectionAvailable: true; onLevelRequested: level => root.queueVolume("@DEFAULT_AUDIO_SINK@", level); onMuteRequested: root.mute("@DEFAULT_AUDIO_SINK@"); onDeviceSelectionChanged: delayedRefresh.restart() }
                     ControlRow { visible: Capabilities.hasAudioSource; icon: root.sourceMuted ? "󰍭" : "󰍬"; title: "Microphone"; value: root.sourceVolume; level: root.sourceLevel; muted: root.sourceMuted; muteAvailable: true; muteIcon: root.sourceMuted ? "󰍭" : "󰍬"; deviceSelectionAvailable: true; microphone: true; onLevelRequested: level => root.queueVolume("@DEFAULT_AUDIO_SOURCE@", level); onMuteRequested: root.mute("@DEFAULT_AUDIO_SOURCE@"); onDeviceSelectionChanged: delayedRefresh.restart() }
                     ControlRow { visible: Capabilities.hasBacklight && Capabilities.hasBrightnessctl; icon: "󰃠"; title: "Brightness"; value: root.brightness; level: root.brightnessLevel; onLevelRequested: level => root.queueBrightness(level) }

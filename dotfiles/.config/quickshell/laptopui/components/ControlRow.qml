@@ -13,6 +13,7 @@ Rectangle {
     property string muteIcon: ""
     property bool deviceSelectionAvailable: false
     property bool microphone: false
+    property real titleWidth: 72
     signal levelRequested(real level)
     signal muteRequested()
     signal deviceSelectionChanged()
@@ -23,7 +24,15 @@ Rectangle {
     RowLayout {
         anchors.fill: parent; anchors.margins: 8; spacing: 8
         Text { text: root.icon; color: root.muted ? Theme.danger : Theme.accent; font.family: Theme.fontFamily; font.pixelSize: 18 }
-        Text { text: root.title; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 12; Layout.preferredWidth: 72 }
+        Text {
+            text: root.title
+            color: Theme.text
+            font.family: Theme.fontFamily
+            font.pixelSize: 12
+            Layout.preferredWidth: root.titleWidth
+            Layout.maximumWidth: root.titleWidth
+            elide: Text.ElideRight
+        }
         Item {
             id: slider
             Layout.fillWidth: true

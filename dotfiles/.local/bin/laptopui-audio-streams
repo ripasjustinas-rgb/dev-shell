@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Emit active PipeWire playback streams as JSON for the Quickshell app mixer.
+# wpctl's status tree is the most portable interface available on the minimal
+# install; stream node ids remain valid for set-volume/set-mute operations.
+status=$(wpctl status -n 2>/dev/null) || {
+  printf '[]\n'
+  exit 0
+}
+
+mapfile -t streams < <(
+  sed -n '/^[[:space:]]*└─ Streams:/,/^Video$/{
+    /^        [0-9][0-9]*[.] /p
+  }' <<< "$status"
+)
+
+printf '['
+separator=''
+for stream in "${streams[@]}"; do
+  id=${stream#        }
+  id=${id%%.*}
+  name=${stream#*'. '}
+  name=${name%"${name##*[![:space:]]}"}
+  # Cava is the shell's spectrum visualizer, not a user-facing playback app.
+  [[ ${name,,} == cava ]] && continue
+  volume_output=$(wpctl get-volume "$id" 2>/dev/null || true)
+  [[ $volume_output =~ Volume:[[:space:]]+([0-9.]+) ]] || continue
+  volume=${BASH_REMATCH[1]}
+  muted=false
+  [[ $volume_output == *'[MUTED]'* ]] && muted=true
+
+  printf '%s' "$separator"
+  jq -cn \
+    --arg id "$id" \
+    --arg name "$name" \
+    --argjson volume "$volume" \
+    --argjson muted "$muted" \
+    '{streamId: $id, name: $name, streamLevel: ($volume * 100 | round), streamMuted: $muted}'
+  separator=','
+done
+printf ']\n'
