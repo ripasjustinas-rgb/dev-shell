@@ -32,7 +32,7 @@ Item {
     Variants { model: Quickshell.screens
         PanelWindow { required property var modelData; screen: modelData; visible: root.open; color: Theme.overlay; exclusionMode: ExclusionMode.Ignore; anchors { top: true; bottom: true; left: true; right: true } focusable: true
             MouseArea { anchors.fill: parent; hoverEnabled: true; onPositionChanged: mouse => { if (!SettingsState.reducedMotion) { root.parallaxX = (mouse.x / width - 0.5) * 5; root.parallaxY = (mouse.y / height - 0.5) * 5 } } onClicked: root.closeRequested() }
-            Rectangle { anchors.horizontalCenter: parent.horizontalCenter; anchors.top: parent.top; anchors.topMargin: 112; width: 560; height: 430; radius: Theme.radiusLarge; color: Theme.background; border.color: Theme.border
+            Rectangle { anchors.horizontalCenter: parent.horizontalCenter; anchors.top: parent.top; anchors.topMargin: 112; width: 560; height: 430; radius: Theme.radiusLarge; color: Theme.popupBackground; border.color: Theme.border
                 transform: Translate { x: root.parallaxX; y: root.parallaxY }
                 MouseArea { anchors.fill: parent }
                 ColumnLayout { anchors.fill: parent; anchors.margins: 18; spacing: 12

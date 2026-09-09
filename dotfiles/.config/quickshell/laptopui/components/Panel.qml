@@ -9,8 +9,21 @@ import qs.services
 
 Item {
     id: root
+    Connections {
+        target: Quickshell
+        function onScreensChanged() {
+            if (SettingsState.mediaScreen.length && !Quickshell.screens.some(screen => screen.name === SettingsState.mediaScreen)) SettingsState.mediaScreen = ""
+        }
+    }
     property var mediaPlayers: []
     property var activeMediaPlayer: null
+    property var preferredPlayer: null
+    readonly property bool visualizerActive: activeMediaPlayer !== null && activeMediaPlayer.playbackState === MprisPlaybackState.Playing && !SettingsState.calmMode && !SettingsState.reducedMotion && Capabilities.hasCava
+    onVisualizerActiveChanged: if (!visualizerActive) {
+        spectrumProcess.running = false
+        spectrumData = []; bassLevel = 0; beatBurst = 0
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.local/bin/laptopui-visualizer-daemon", "--stop"])
+    }
     property var spectrumData: []
     property real bassLevel: 0
     property real bassBaseline: 0
@@ -20,8 +33,13 @@ Item {
     property real beatWaveEcho: 1
     property real shimmerPhase: 0
 
+    IpcHandler {
+        target: "media"
+        function status(): string { return JSON.stringify({active: root.visualizerActive, sampling: spectrumProcess.running, samples: root.spectrumData, bass: root.bassLevel, calm: SettingsState.calmMode, reducedMotion: SettingsState.reducedMotion}) }
+    }
+
     function triggerBeatWave() {
-        if (SettingsState.calmMode) return
+        if (SettingsState.calmMode || SettingsState.reducedMotion) return
         beatBurst = 1
         beatBurstDecay.restart()
         primaryBeatWave.restart()
@@ -29,7 +47,7 @@ Item {
     }
 
     function consumeBass(nextBass) {
-        if (SettingsState.calmMode) return
+        if (SettingsState.calmMode || SettingsState.reducedMotion) return
         const rise = nextBass - bassBaseline
         const onsetThreshold = Math.max(0.03, bassBaseline * 0.38)
         if (beatCooldownFrames > 0) beatCooldownFrames -= 1
@@ -70,17 +88,8 @@ Item {
                 priority = nextPriority
             }
         }
-        activeMediaPlayer = best
-    }
-
-    Connections {
-        target: SettingsState
-        function onCalmModeChanged() {
-            if (SettingsState.calmMode) {
-                spectrumProcess.running = false
-                Quickshell.execDetached([Quickshell.env("HOME") + "/.local/bin/laptopui-visualizer-daemon", "--stop"])
-            }
-        }
+        activeMediaPlayer = preferredPlayer && mediaPlayers.indexOf(preferredPlayer) !== -1 ? preferredPlayer : best
+        if (!activeMediaPlayer) SettingsState.mediaScreen = ""
     }
 
     Instantiator {
@@ -107,16 +116,21 @@ Item {
         command: [Quickshell.env("HOME") + "/.local/bin/laptopui-audio-spectrum"]
         stdout: StdioCollector {
             onStreamFinished: {
-                const raw = text.trim()
+                const raw = text.trim().replace(/;+$/, "")
                 if (!raw.length) return
                 root.spectrumData = raw.split(";").map(value => {
                     const parsed = parseInt(value)
                     return isNaN(parsed) ? 0 : Math.max(0, Math.min(16, parsed))
                 })
-                let bass = 0
-                const count = Math.min(4, root.spectrumData.length)
-                for (let index = 0; index < count; ++index) bass += root.spectrumData[index]
-                root.consumeBass(count ? bass / count / 16 : 0)
+                // RMS across the low-frequency band keeps kick/bass energy
+                // visible even when the very lowest individual bins are quiet.
+                let bassEnergy = 0
+                const count = Math.min(6, root.spectrumData.length)
+                for (let index = 0; index < count; ++index) {
+                    const level = root.spectrumData[index] / 16
+                    bassEnergy += level * level
+                }
+                root.consumeBass(count ? Math.sqrt(bassEnergy / count) : 0)
             }
         }
     }
@@ -157,14 +171,14 @@ Item {
     Timer {
         interval: 66
         repeat: true
-        running: root.activeMediaPlayer !== null && !SettingsState.calmMode && Capabilities.hasCava
+        running: root.visualizerActive
         onTriggered: if (!spectrumProcess.running) spectrumProcess.running = true
     }
 
     Timer {
         interval: 40
         repeat: true
-        running: !SettingsState.calmMode
+        running: !SettingsState.calmMode && !SettingsState.reducedMotion
         onTriggered: root.shimmerPhase += 0.03
     }
 
@@ -260,7 +274,7 @@ Item {
                     spacing: 7
 
                     MediaVisualizerWing {
-                        active: root.activeMediaPlayer !== null && !SettingsState.calmMode
+                        active: root.visualizerActive
                         mirrored: true
                         spectrumData: root.spectrumData
                         burstLevel: root.beatBurst
@@ -268,18 +282,46 @@ Item {
 
                     ClockWeather {
                         id: clockWeather
-                        onClicked: calendarWeather.requestedOpen = !calendarWeather.requestedOpen
+                        onClicked: {
+                            const opening = !calendarWeather.requestedOpen
+                            SettingsState.mediaScreen = ""
+                            SettingsState.connectivityOpen = false
+                            if (opening) SettingsState.overlayOpened("calendar")
+                            calendarWeather.requestedOpen = opening
+                        }
                     }
 
-                    MediaPill { player: root.activeMediaPlayer }
+                    MediaPill {
+                        id: mediaPill
+                        player: root.activeMediaPlayer
+                        onClicked: {
+                            calendarWeather.requestedOpen = false
+                            SettingsState.mediaScreen = SettingsState.mediaScreen === modelData.name ? "" : modelData.name
+                        }
+                    }
 
                     MediaVisualizerWing {
-                        active: root.activeMediaPlayer !== null && !SettingsState.calmMode
+                        active: root.visualizerActive
                         spectrumData: root.spectrumData
                         burstLevel: root.beatBurst
                     }
                 }
 
+                MediaPanel {
+                    screen: modelData
+                    anchorItem: mediaPill
+                    player: root.activeMediaPlayer
+                    players: root.mediaPlayers
+                    spectrumData: root.spectrumData
+                    requestedOpen: SettingsState.mediaScreen === modelData.name
+                    onCloseRequested: SettingsState.mediaScreen = ""
+                    onPlayerSelected: selectedPlayer => { root.preferredPlayer = selectedPlayer; root.refreshActivePlayer() }
+                }
+
+                Connections {
+                    target: SettingsState
+                    function onOverlayOpened(name) { if (name !== "calendar") calendarWeather.requestedOpen = false }
+                }
                 CalendarWeather {
                     id: calendarWeather
                     anchorItem: clockWeather

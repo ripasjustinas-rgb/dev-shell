@@ -84,6 +84,7 @@ manifest() {
     "$repo_dir/dotfiles/.local/bin/laptopui-weather" "$home_dir/.local/bin/laptopui-weather" \
     "$repo_dir/dotfiles/.local/bin/laptopui-audio-spectrum" "$home_dir/.local/bin/laptopui-audio-spectrum" \
     "$repo_dir/dotfiles/.local/bin/laptopui-audio-streams" "$home_dir/.local/bin/laptopui-audio-streams" \
+    "$repo_dir/dotfiles/.local/bin/laptopui-network-info" "$home_dir/.local/bin/laptopui-network-info" \
     "$repo_dir/dotfiles/.local/bin/laptopui-visualizer-daemon" "$home_dir/.local/bin/laptopui-visualizer-daemon" \
     "$repo_dir/dotfiles/.local/bin/laptopui-theme-generate" "$home_dir/.local/bin/laptopui-theme-generate" \
     "$repo_dir/dotfiles/.local/bin/laptopui-apply-hypr-theme" "$home_dir/.local/bin/laptopui-apply-hypr-theme" \

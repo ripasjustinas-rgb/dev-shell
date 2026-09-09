@@ -3,6 +3,7 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 Item {
     id: root
@@ -99,7 +100,7 @@ Item {
         anchors.topMargin: Theme.panelPopupCardTop
         implicitHeight: 380
         radius: Theme.radiusLarge
-        color: Theme.background
+        color: Theme.popupBackground
         border.width: 1
         border.color: Theme.border
         opacity: root.requestedOpen ? 1 : 0
@@ -111,9 +112,9 @@ Item {
         focus: root.requestedOpen
         Keys.onEscapePressed: root.requestedOpen = false
         MouseArea { anchors.fill: parent }
-        Behavior on opacity { NumberAnimation { duration: Theme.animationNormal; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: Theme.animationNormal + 60; easing.type: Easing.OutBack } }
-        Behavior on rotation { NumberAnimation { duration: Theme.animationNormal + 80; easing.type: Easing.OutBack } }
+        Behavior on opacity { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal); easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 60); easing.type: Easing.OutBack } }
+        Behavior on rotation { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 80); easing.type: Easing.OutBack } }
 
         Rectangle {
             anchors.top: parent.top
@@ -124,7 +125,7 @@ Item {
             radius: height / 2
             color: Theme.accent
             opacity: 0.85
-            Behavior on width { NumberAnimation { duration: Theme.animationNormal + 110; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 110); easing.type: Easing.OutCubic } }
         }
 
         RowLayout {

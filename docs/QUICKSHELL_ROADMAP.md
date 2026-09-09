@@ -1,5 +1,15 @@
 # LaptopUI Quickshell vystymo planas
 
+## 2026-09-08 papildymas
+
+Įgyvendintas media kortelės išplėtimas su seek, bendras tinklo telemetrijos
+servisas, kompaktiškas 410 px connectivity popup su išplečiamomis sekcijomis,
+`SUPER+A` status/display/focus valdikliai ir clipboard 3 → 50 įrašų peržiūra.
+Taip pat pagerintas popup kontrastas, keyboard focus ir reduced motion.
+Tikslus elgesys, neprivalomi backend’ai bei likusios hardware patikros:
+[SHELL_CONTROLS.md](SHELL_CONTROLS.md). Tai nepakeičia žemiau esančių
+atskirų etapų priėmimo kriterijų.
+
 ## Tikslas
 
 Šis dokumentas aprašo darbus po dabartinio `laptopui` funkcijų rinkinio:

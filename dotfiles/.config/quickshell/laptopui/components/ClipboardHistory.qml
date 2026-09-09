@@ -8,12 +8,16 @@ Item {
     id: root
     property var entries: []
     property string status: ""
+    property bool expanded: false
+    property int totalCount: 0
+    signal expansionRequested()
+    readonly property var displayedEntries: expanded ? entries : entries.slice(0, 3)
     signal historySizeChanged(int size)
     Layout.fillWidth: true
-    readonly property int visibleEntryCount: Math.min(entries.length, 8)
-    readonly property int listHeight: entries.reduce((total, entry) => total + entry.height, 0)
-        + Math.max(0, visibleEntryCount - 1) * 4
-    implicitHeight: visibleEntryCount > 0 ? 27 + listHeight : 45
+    readonly property int visibleEntryCount: displayedEntries.length
+    readonly property int listHeight: Math.min(expanded ? 320 : 220, displayedEntries.reduce((total, entry) => total + entry.height, 0)
+        + Math.max(0, visibleEntryCount - 1) * 4)
+    implicitHeight: visibleEntryCount > 0 ? 43 + listHeight : 64
 
     function refresh() {
         listQuery.exec(["cliphist", "list"])
@@ -21,7 +25,8 @@ Item {
 
     function parseEntries(text) {
         const lines = text.trim().split("\n").filter(line => line.length)
-        entries = lines.slice(0, 8).map(line => {
+        totalCount = lines.length
+        entries = lines.slice(0, 50).map(line => {
             const separator = line.indexOf("\t")
             return {
                 id: separator >= 0 ? line.slice(0, separator) : line,
@@ -34,8 +39,8 @@ Item {
     }
 
     function copy(entry) {
-        status = "Copied"
-        copyEntry.exec(["sh", "-c", "cliphist decode \"$1\" | wl-copy", "sh", entry.id])
+        status = "Copying…"
+        copyEntry.exec(["bash", "-o", "pipefail", "-c", "cliphist decode \"$1\" | wl-copy", "sh", entry.id])
     }
 
     Process {
@@ -46,13 +51,15 @@ Item {
     }
     Process {
         id: copyEntry
-        onExited: statusTimer.restart()
+        onExited: (code, exitStatus) => { root.status = code === 0 ? "Copied" : "Copy failed"; statusTimer.restart() }
     }
     Process {
         id: wipeHistory
-        onExited: {
+        onExited: (code, exitStatus) => {
+            if (code !== 0) { root.status = "Could not clear history"; statusTimer.restart(); return }
             root.status = "Cleared"
             root.entries = []
+            root.totalCount = 0
             root.historySizeChanged(0)
             statusTimer.restart()
         }
@@ -70,19 +77,20 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Text {
-                text: "Clipboard history"
+                text: "Clipboard"
                 color: Theme.text
                 font.family: Theme.fontFamily
                 font.pixelSize: 13
                 font.bold: true
             }
             Text {
-                text: root.status || (root.entries.length ? root.entries.length + " saved" : "")
+                text: root.status || (root.totalCount ? root.totalCount + " saved" : "")
                 color: Theme.muted
                 font.family: Theme.fontFamily
                 font.pixelSize: 10
             }
             Item { Layout.fillWidth: true }
+            ActionButton { visible: root.entries.length > 3; text: root.expanded ? "Less" : "More"; onClicked: root.expansionRequested() }
             Text {
                 visible: root.entries.length > 0
                 text: "Clear"
@@ -105,7 +113,8 @@ Item {
             Layout.maximumHeight: root.listHeight
             clip: true
             spacing: 4
-            model: root.entries
+            model: root.displayedEntries
+            boundsBehavior: Flickable.StopAtBounds
             delegate: Rectangle {
                 required property var modelData
                 width: historyList.width
@@ -156,7 +165,7 @@ Item {
                     }
                     Process {
                         id: previewWriter
-                        onExited: imagePreview.previewReady = true
+                        onExited: (code, status) => imagePreview.previewReady = code === 0
                     }
                     Component.onCompleted: {
                         if (modelData.image) previewWriter.exec([

@@ -5,7 +5,13 @@ import qs.theme
 
 Item {
     id: root
+    signal clicked()
     property var player: null
+    activeFocusOnTab: visible
+    Accessible.role: Accessible.Button
+    Accessible.name: "Expand media controls"
+    Keys.onReturnPressed: clicked()
+    Keys.onSpacePressed: clicked()
     property string displayedArtSource: ""
 
     readonly property bool hasPlayer: player !== null
@@ -54,6 +60,8 @@ Item {
             opacity: 0.38
         }
     }
+
+    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.clicked() }
 
     RowLayout {
         anchors.fill: parent

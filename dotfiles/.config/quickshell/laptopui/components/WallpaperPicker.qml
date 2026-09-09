@@ -62,7 +62,6 @@ Item {
             anchors { top: true; bottom: true; left: true; right: true }
             focusable: true
             WlrLayershell.namespace: "laptopui-wallpaper-picker"
-            Keys.onEscapePressed: root.open = false
 
             // This must stay below the card: otherwise it accepts every click
             // and makes the picker look as if its actions only dismiss it.
@@ -81,7 +80,7 @@ Item {
                 anchors.topMargin: Theme.panelPopupCardTop
                 anchors.leftMargin: 12
                 radius: Theme.radiusLarge
-                color: Theme.background
+                color: Theme.popupBackground
                 border.width: 1
                 border.color: Theme.border
 

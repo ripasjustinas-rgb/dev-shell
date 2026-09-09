@@ -3,15 +3,10 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 Item {
     id: root
-    property real cpuUsage: 0
-    property real previousIdle: 0
-    property real previousTotal: 0
-    property real ramUsed: 0
-    property real ramTotal: 0
-    readonly property int ramPercent: ramTotal > 0 ? Math.round(ramUsed / ramTotal * 100) : 0
     implicitWidth: statsRow.implicitWidth
     implicitHeight: Theme.panelContentHeight - 6
 
@@ -22,8 +17,8 @@ Item {
 
         Repeater {
             model: [
-                { icon: "󰍛", value: Math.round(root.cpuUsage) + "%" },
-                { icon: "󰘚", value: root.ramPercent + "%" }
+                { icon: "󰍛", value: Math.round(SystemHealth.cpuUsage) + "%" },
+                { icon: "󰘚", value: SystemHealth.ramPercent + "%" }
             ]
             Rectangle {
                 required property var modelData
@@ -73,37 +68,4 @@ Item {
         }
     }
 
-    FileView { id: cpuFile; path: "/proc/stat"; watchChanges: false }
-    FileView { id: memoryFile; path: "/proc/meminfo"; watchChanges: false }
-    Timer {
-        interval: 2000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: { cpuFile.reload(); memoryFile.reload() }
-    }
-    Connections {
-        target: cpuFile
-        function onLoaded() {
-            const values = cpuFile.text().split("\n")[0].trim().split(/\s+/).slice(1).map(Number)
-            const idle = values[3] + values[4]
-            const total = values.reduce((sum, value) => sum + value, 0)
-            const delta = total - root.previousTotal
-            if (delta > 0) root.cpuUsage = 100 * (1 - (idle - root.previousIdle) / delta)
-            root.previousIdle = idle
-            root.previousTotal = total
-        }
-    }
-    Connections {
-        target: memoryFile
-        function onLoaded() {
-            const lines = memoryFile.text().split("\n")
-            function valueFor(key) {
-                const line = lines.find(line => line.startsWith(key))
-                return line ? parseInt(line.split(/\s+/)[1]) : 0
-            }
-            root.ramTotal = valueFor("MemTotal:")
-            root.ramUsed = root.ramTotal - valueFor("MemAvailable:")
-        }
-    }
 }

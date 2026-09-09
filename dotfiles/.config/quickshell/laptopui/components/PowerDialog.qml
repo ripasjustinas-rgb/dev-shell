@@ -2,10 +2,12 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 Item {
     id: root
     property bool open: false
+    onOpenChanged: if (!open) pending = ""
     signal closeRequested()
     property string pending: ""
     function choose(action) { pending = action }
@@ -17,15 +19,11 @@ Item {
     Variants { model: Quickshell.screens
         PanelWindow { required property var modelData; screen: modelData; visible: root.open; color: Theme.overlay; exclusionMode: ExclusionMode.Ignore; anchors { top: true; bottom: true; left: true; right: true }
             focusable: true
-            Keys.onEscapePressed: {
-                if (root.pending.length) root.pending = ""
-                else root.closeRequested()
-            }
             Shortcut { enabled: root.open; sequence: "Escape"; onActivated: { if (root.pending.length) root.pending = ""; else root.closeRequested() } }
             MouseArea { anchors.fill: parent; onClicked: root.closeRequested() }
-            Rectangle { anchors.centerIn: parent; width: 370; height: root.pending.length ? 220 : 180; radius: 20; color: Theme.background; border.color: Theme.border; border.width: 1; scale: root.open ? 1 : 0.94; focus: root.open
+            Rectangle { anchors.centerIn: parent; width: 370; height: root.pending.length ? 220 : 180; radius: 20; color: Theme.popupBackground; border.color: Theme.border; border.width: 1; scale: root.open ? 1 : 0.94; focus: root.open
                 Keys.onEscapePressed: { if (root.pending.length) root.pending = ""; else root.closeRequested() }
-                Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+                Behavior on scale { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (200); easing.type: Easing.OutBack } }
                 MouseArea { anchors.fill: parent }
                 ColumnLayout { anchors.fill: parent; anchors.margins: 20; spacing: 14
                     Text { text: root.pending.length ? (root.pending + "?") : "Power"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 18; font.bold: true }

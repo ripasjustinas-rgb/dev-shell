@@ -124,7 +124,7 @@ PopupWindow {
         anchors.fill: parent
         anchors.topMargin: Theme.panelPopupGap
         radius: Theme.radiusLarge
-        color: Theme.background
+        color: Theme.popupBackground
         border.color: Theme.border
         border.width: 1
         opacity: root.requestedOpen ? 1 : 0
@@ -134,9 +134,9 @@ PopupWindow {
         implicitHeight: Math.min(292, Math.max(104, 48 + deviceList.contentHeight + 16))
         focus: root.requestedOpen
         Keys.onEscapePressed: root.requestedOpen = false
-        Behavior on opacity { NumberAnimation { duration: Theme.animationFast; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: Theme.animationNormal; easing.type: Easing.OutBack } }
-        Behavior on rotation { NumberAnimation { duration: Theme.animationNormal + 20; easing.type: Easing.OutBack } }
+        Behavior on opacity { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationFast); easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal); easing.type: Easing.OutBack } }
+        Behavior on rotation { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 20); easing.type: Easing.OutBack } }
         Rectangle {
             anchors.top: parent.top
             anchors.topMargin: 8
@@ -146,7 +146,7 @@ PopupWindow {
             radius: height / 2
             color: Theme.accent
             opacity: 0.85
-            Behavior on width { NumberAnimation { duration: Theme.animationNormal + 60; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 60); easing.type: Easing.OutCubic } }
         }
 
         ColumnLayout {

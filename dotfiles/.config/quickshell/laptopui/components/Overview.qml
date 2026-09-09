@@ -97,7 +97,7 @@ Item {
                 width: Math.min(parent.width - 64, 1120)
                 height: Math.min(parent.height - 72, 680)
                 radius: Theme.radiusLarge
-                color: Theme.background
+                color: Theme.popupBackground
                 border.color: Theme.border
 
                 MouseArea { anchors.fill: parent }
@@ -178,7 +178,7 @@ Item {
                                 border.width: selected ? 2 : 1
                                 border.color: selected ? Theme.accent : Theme.border
 
-                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on color { ColorAnimation { duration: SettingsState.reducedMotion ? 0 : (120)} }
 
                                 ColumnLayout {
                                     anchors.fill: parent
@@ -212,7 +212,7 @@ Item {
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 158
                                         radius: 7
-                                        color: Theme.background
+                                        color: Theme.popupBackground
                                         border.width: 1
                                         border.color: Theme.border
                                         clip: true

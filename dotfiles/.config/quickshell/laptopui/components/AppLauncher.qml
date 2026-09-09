@@ -4,6 +4,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 Item {
     id: root
@@ -135,11 +136,11 @@ Item {
                 anchors.top: parent.top
                 anchors.topMargin: 112
                 width: 620; height: 510; radius: 20
-                color: Theme.background; border.color: Theme.border; border.width: 1
+                color: Theme.popupBackground; border.color: Theme.border; border.width: 1
                 opacity: root.open ? 1 : 0
                 scale: root.open ? 1 : 0.96
-                Behavior on opacity { NumberAnimation { duration: 150 } }
-                Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+                Behavior on opacity { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (150)} }
+                Behavior on scale { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (200); easing.type: Easing.OutBack } }
                 MouseArea { anchors.fill: parent }
 
                 ColumnLayout {
@@ -223,7 +224,7 @@ Item {
                             required property int index
                             width: appList.width; height: 54; radius: 10
                             color: index === root.selectedIndex || rowMouse.containsMouse ? Theme.surfaceHover : "transparent"
-                            Behavior on height { NumberAnimation { duration: 100 } }
+                            Behavior on height { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (100)} }
                             RowLayout { anchors.fill: parent; anchors.margins: 9; spacing: 12
                                 IconImage { source: root.iconSource(modelData); implicitSize: 28; Layout.preferredWidth: 28; Layout.preferredHeight: 28 }
                                 ColumnLayout { Layout.fillWidth: true; spacing: 1

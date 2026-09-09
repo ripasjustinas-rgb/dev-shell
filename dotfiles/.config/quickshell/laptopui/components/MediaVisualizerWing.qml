@@ -1,5 +1,6 @@
 import QtQuick
 import qs.theme
+import qs.services
 
 Item {
     id: root
@@ -19,8 +20,8 @@ Item {
     implicitHeight: Theme.panelContentHeight - 4
     opacity: active ? 1 : 0
     clip: true
-    Behavior on implicitWidth { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
-    Behavior on opacity { NumberAnimation { duration: 180 } }
+    Behavior on implicitWidth { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (260); easing.type: Easing.OutCubic } }
+    Behavior on opacity { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (180)} }
 
     Timer {
         running: root.active
@@ -31,10 +32,28 @@ Item {
 
     function laneLevel(lane) {
         if (!spectrumData || spectrumData.length === 0) return 0.12
-        const targets = [1, 5, 10, 18, 27]
-        const index = Math.min(spectrumData.length - 1, targets[laneCount - lane - 1])
-        const value = Number(spectrumData[index])
-        return isNaN(value) ? 0 : Math.max(0, Math.min(1, value / 16))
+        // A compact lane represents a complete frequency band. Sampling one
+        // bin per lane left most of Cava's 32 bins invisible and made the
+        // sparse high-frequency bins appear frozen.
+        const band = laneCount - lane - 1
+        const edges = [0, 0.10, 0.25, 0.44, 0.72, 1]
+        const start = Math.floor(spectrumData.length * edges[band])
+        const end = Math.max(start + 1, Math.floor(spectrumData.length * edges[band + 1]))
+        let energy = 0
+        let peak = 0
+        let samples = 0
+        for (let index = start; index < Math.min(end, spectrumData.length); ++index) {
+            const raw = Number(spectrumData[index])
+            const value = isNaN(raw) ? 0 : Math.max(0, Math.min(16, raw)) / 16
+            energy += value * value
+            peak = Math.max(peak, value)
+            samples += 1
+        }
+        const rms = samples ? Math.sqrt(energy / samples) : 0
+        // High-frequency energy is naturally quieter; a small progressive
+        // gain keeps it readable without letting a single noisy bin dominate.
+        const gain = 1 + band * 0.10
+        return Math.max(0, Math.min(1, (rms * 0.68 + peak * 0.32) * gain))
     }
 
     Column {

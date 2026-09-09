@@ -8,6 +8,13 @@ import qs.services
 
 Item {
     id: root
+    Connections {
+        target: Quickshell
+        function onScreensChanged() {
+            if (root.open && !Quickshell.screens.some(screen => screen.name === root.targetScreen)) root.closeRequested()
+        }
+    }
+    property string targetScreen: ""
     property bool open: false
     property bool closing: false
     signal closeRequested()
@@ -22,14 +29,17 @@ Item {
     property bool sinkMuted: false
     property bool sourceMuted: false
     property bool advancedAudio: false
+    property bool clipboardExpanded: false
     property string pendingVolumeTarget: ""
     property real pendingVolumeLevel: 0
     property real pendingBrightnessLevel: 0
 
     onOpenChanged: {
+        if (open) targetScreen = SettingsState.focusedScreen
         if (!open) {
             closing = true
             advancedAudio = false
+            clipboardExpanded = false
             streamModel.clear()
         }
     }
@@ -94,40 +104,37 @@ Item {
             required property var modelData
             screen: modelData
             // During close, retain the layer until the card reaches opacity 0.
-            visible: root.open || card.opacity > 0
+            visible: (modelData.name === root.targetScreen) && (root.open || card.opacity > 0)
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
             anchors { top: true; bottom: true; left: true; right: true }
             focusable: true
-            Keys.onEscapePressed: root.closeRequested()
-            Shortcut { enabled: root.open; sequence: "Escape"; onActivated: root.closeRequested() }
+            Shortcut { enabled: root.open && modelData.name === root.targetScreen; sequence: "Escape"; onActivated: root.closeRequested() }
 
             MouseArea { anchors.fill: parent; onClicked: root.closeRequested() }
 
             Rectangle {
                 id: card
-                width: 390
-                height: Math.min(
-                    parent.height - Theme.panelHeight - 28,
-                    Math.max(410, 365 + root.clipboardHeight + (root.advancedAudio ? Math.min(174, 50 + streamModel.count * 46) : 0))
-                )
+                width: Math.min(410, parent.width - 28)
+                height: Math.min(parent.height - Theme.panelPopupCardTop - 20, controlContents.implicitHeight + 36)
+                clip: true
                 anchors.top: parent.top
                 anchors.right: parent.right
                 anchors.topMargin: Theme.panelPopupCardTop
                 anchors.rightMargin: Theme.panelPopupRightInset
                 radius: Theme.radiusLarge
-                color: Theme.background
+                color: Theme.popupBackground
                 border.color: Theme.border
                 border.width: 1
                 opacity: root.open ? 1 : 0
                 y: root.open ? Theme.panelPopupCardTop : (root.closing ? Theme.panelPopupCardTop + 22 : Theme.panelHeight - 18)
                 scale: root.open ? 1 : (root.closing ? 0.84 : 0.9)
-                rotation: root.open ? 0 : (root.closing ? 2.4 : -1.5)
+                rotation: 0
                 transformOrigin: Item.TopRight
-                Behavior on opacity { NumberAnimation { duration: Theme.animationNormal - 20; easing.type: Easing.OutCubic } }
-                Behavior on y { NumberAnimation { duration: Theme.animationNormal + 80; easing.type: Easing.OutBack } }
-                Behavior on scale { NumberAnimation { duration: Theme.animationNormal + 70; easing.type: Easing.OutBack } }
-                Behavior on rotation { NumberAnimation { duration: Theme.animationNormal + 100; easing.type: Easing.OutBack } }
+                Behavior on opacity { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal - 20); easing.type: Easing.OutCubic } }
+                Behavior on y { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 80); easing.type: Easing.OutBack } }
+                Behavior on scale { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 70); easing.type: Easing.OutBack } }
+                Behavior on rotation { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 100); easing.type: Easing.OutBack } }
 
                 Rectangle {
                     anchors.top: parent.top
@@ -138,23 +145,29 @@ Item {
                     radius: height / 2
                     color: Theme.accent
                     opacity: 0.88
-                    Behavior on width { NumberAnimation { duration: Theme.animationNormal + 120; easing.type: Easing.OutCubic } }
+                    Behavior on width { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 120); easing.type: Easing.OutCubic } }
                 }
 
                 MouseArea { anchors.fill: parent }
                 focus: root.open
                 Keys.onEscapePressed: root.closeRequested()
-                ColumnLayout {
+                Flickable {
                     anchors.fill: parent
                     anchors.margins: 18
-                    spacing: 12
+                    contentHeight: controlContents.implicitHeight
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                ColumnLayout {
+                    id: controlContents
+                    width: parent.width
+                    spacing: 10
                     RowLayout {
                         Layout.fillWidth: true
                         Text { text: "Control center"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 17; font.bold: true }
                         Item { Layout.fillWidth: true }
-                        Text { text: "󰅖"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 16
-                            MouseArea { anchors.fill: parent; onClicked: root.closeRequested() } }
+                        ActionButton { text: "Close"; onClicked: root.closeRequested() }
                     }
+                    StatusStrip { Layout.fillWidth: true; active: root.open }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
                     Rectangle {
                         visible: Capabilities.hasAudioSink
@@ -237,27 +250,33 @@ Item {
                         columns: 2
                         columnSpacing: 8
                         rowSpacing: 8
-                        QuickToggle { Layout.fillWidth: true; Layout.preferredWidth: 0; visible: Capabilities.hasWifi; icon: "󰤨"; label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off"; active: Networking.wifiEnabled; onClicked: Networking.wifiEnabled = !Networking.wifiEnabled }
+                        QuickToggle { Layout.fillWidth: true; Layout.preferredWidth: 0; icon: "󰤨"; label: "Connectivity"; active: !!NetworkState.info.interface; onClicked: SettingsState.connectivityOpen = true }
                         QuickToggle { Layout.fillWidth: true; Layout.preferredWidth: 0; visible: Capabilities.powerProfilesAvailable; icon: "󰂄"; label: root.profile; active: root.profile === "performance"; onClicked: profilePopup.open = !profilePopup.open }
                         QuickToggle { Layout.fillWidth: true; Layout.preferredWidth: 0; icon: "󰏤"; label: SettingsState.calmMode ? "Calm" : "Effects"; active: SettingsState.calmMode; onClicked: SettingsState.toggleCalmMode() }
                         QuickToggle { Layout.fillWidth: true; Layout.preferredWidth: 0; icon: "󰂚"; label: SettingsState.dnd ? "DND" : "Notifications"; active: SettingsState.dnd; onClicked: SettingsState.toggleDnd() }
                     }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surfaceHover }
+                    ActionButton { Layout.fillWidth: true; text: SettingsState.focusMode ? "Leave focus · restore previous settings" : "Focus · DND + calm mode"; highlighted: SettingsState.focusMode; onClicked: SettingsState.toggleFocusMode() }
+                    DisplayControls { Layout.fillWidth: true; active: root.open }
                     ClipboardHistory {
                         id: clipboardHistory
+                        expanded: root.clipboardExpanded
+                        onExpansionRequested: root.clipboardExpanded = !root.clipboardExpanded
                         onImplicitHeightChanged: root.clipboardHeight = implicitHeight
                     }
                 }
 
+                }
                 Rectangle {
                     id: profilePopup
                     property bool open: false
                     visible: open
-                    width: 190; height: 116; radius: 12
+                    width: 190; height: profileColumn.implicitHeight + 16; radius: Theme.radius
                     color: Theme.elevated; border.color: Theme.border; border.width: 1
                     anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 18
                     Column {
-                        anchors.fill: parent; anchors.margins: 8; spacing: 2
+                        id: profileColumn
+                        anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: 8; spacing: 2
                         Repeater { model: Capabilities.powerProfiles
                             delegate: QuickMenuItem { required property string modelData; text: modelData; active: root.profile === modelData; onClicked: { Capabilities.setPowerProfile(modelData); profilePopup.open = false; delayedRefresh.restart() } }
                         }
@@ -269,6 +288,7 @@ Item {
                     root.refresh()
                     clipboardHistory.refresh()
                 } else {
+                    profilePopup.open = false
                     root.closing = false
                 }
             }

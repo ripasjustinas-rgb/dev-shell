@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Networking
+import Quickshell.Services.Pipewire
 import QtQuick
 import QtQuick.Layouts
 import qs.services
@@ -7,6 +8,17 @@ import qs.theme
 
 Item {
     id: root
+    Connections {
+        target: Quickshell
+        function onScreensChanged() {
+            if (root.requestedOpen && !Quickshell.screens.some(screen => screen.name === root.targetScreen)) SettingsState.connectivityOpen = false
+        }
+    }
+    property string targetScreen: ""
+    property bool wifiExpanded: false
+    property bool bluetoothExpanded: false
+    onWifiExpandedChanged: if (wifiDevice) wifiDevice.scannerEnabled = requestedOpen && wifiExpanded
+    onWifiDeviceChanged: syncOpenState()
     property Item anchorItem
     property bool anchoredToPanelEdge: false
     property bool requestedOpen: false
@@ -15,24 +27,29 @@ Item {
         return null
     }
     readonly property bool dualRadio: Capabilities.hasWifi && Capabilities.hasBluetooth
-    onRequestedOpenChanged: syncOpenState()
+    onRequestedOpenChanged: { if (requestedOpen) targetScreen = SettingsState.focusedScreen; syncOpenState() }
 
+    function audioSink(address) {
+        const suffix = address.replace(/:/g, "_").toLowerCase()
+        return Pipewire.nodes.values.find(node => node.isSink && !node.isStream && node.name.toLowerCase().includes(suffix)) || null
+    }
     function syncOpenState() {
+        if (wifiDevice) wifiDevice.scannerEnabled = requestedOpen && wifiExpanded
+        if (!requestedOpen && BluetoothState.adapter) BluetoothState.adapter.discovering = false
         if (requestedOpen) {
-            if (wifiDevice) wifiDevice.scannerEnabled = true
             BluetoothState.refresh()
         }
     }
 
-    function connectWifi(network) {
+    function connectWifi(network, passwordDialog, passwordInput) {
         if (network.connected) {
             network.disconnect()
         } else if (network.known || network.security === WifiSecurityType.Open) {
             network.connect()
         } else {
-            wifiPasswordConfirm.network = network
-            wifiPasswordConfirm.visible = true
-            wifiPasswordInput.forceActiveFocus()
+            passwordDialog.network = network
+            passwordDialog.visible = true
+            passwordInput.forceActiveFocus()
         }
     }
 
@@ -42,12 +59,12 @@ Item {
         PanelWindow {
             required property var modelData
             screen: modelData
-            visible: root.requestedOpen || content.opacity > 0
+            visible: (modelData.name === root.targetScreen) && (root.requestedOpen || content.opacity > 0)
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
             focusable: true
             anchors { top: true; bottom: true; left: true; right: true }
-            Shortcut { enabled: root.requestedOpen; sequence: "Escape"; onActivated: SettingsState.connectivityOpen = false }
+            Shortcut { enabled: root.requestedOpen && modelData.name === root.targetScreen; sequence: "Escape"; onActivated: SettingsState.connectivityOpen = false }
             MouseArea { anchors.fill: parent; onClicked: SettingsState.connectivityOpen = false }
 
     Rectangle {
@@ -56,23 +73,24 @@ Item {
         anchors.right: parent.right
         anchors.topMargin: Theme.panelPopupCardTop
         anchors.rightMargin: Theme.panelPopupRightInset
-        width: root.dualRadio ? 640 : 350
+        width: Math.min(parent.width - 28, 410)
         height: implicitHeight
         // Keep this panel close to the calendar/control-center footprint. A
         // short network list used to make the popup jump noticeably lower.
-        radius: Theme.radiusLarge; color: Theme.background
+        radius: Theme.radiusLarge; color: Theme.popupBackground
         border.color: Theme.border; border.width: 1
         opacity: root.requestedOpen ? 1 : 0
         scale: root.requestedOpen ? 1 : 0.89
-        rotation: root.requestedOpen ? 0 : -1.8
+        rotation: 0
         transformOrigin: Item.TopRight
-        implicitHeight: Math.min(410, Math.max(286, layout.implicitHeight + 28))
+        implicitHeight: Math.min(parent.height - Theme.panelPopupCardTop - 20, Math.max(286, contentColumn.implicitHeight + 28))
+        clip: true
         focus: root.requestedOpen
         Keys.onEscapePressed: SettingsState.connectivityOpen = false
         MouseArea { anchors.fill: parent }
-        Behavior on opacity { NumberAnimation { duration: Theme.animationFast + 30; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: Theme.animationNormal + 20; easing.type: Easing.OutBack } }
-        Behavior on rotation { NumberAnimation { duration: Theme.animationNormal + 40; easing.type: Easing.OutBack } }
+        Behavior on opacity { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationFast + 30); easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 20); easing.type: Easing.OutBack } }
+        Behavior on rotation { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 40); easing.type: Easing.OutBack } }
         Rectangle {
             anchors.top: parent.top
             anchors.topMargin: 8
@@ -82,63 +100,83 @@ Item {
             radius: height / 2
             color: Theme.accent
             opacity: 0.85
-            Behavior on width { NumberAnimation { duration: Theme.animationNormal + 80; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 80); easing.type: Easing.OutCubic } }
         }
-        RowLayout {
+        Flickable {
+            anchors.fill: parent
+            anchors.margins: 14
+            contentHeight: contentColumn.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+        ColumnLayout {
+            id: contentColumn
+            width: parent.width
+            spacing: 14
+            RowLayout {
+                Layout.fillWidth: true
+                Text { Layout.fillWidth: true; text: "Connectivity"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: 17; font.bold: true }
+                ActionButton { text: "Close"; onClicked: SettingsState.connectivityOpen = false }
+            }
+            NetworkCard { Layout.fillWidth: true }
+        GridLayout {
             id: layout
-            anchors.fill: parent; anchors.margins: 14; spacing: 10
+            Layout.fillWidth: true
+            columns: 1
+            columnSpacing: 16
+            rowSpacing: 14
             Item { visible: Capabilities.hasWifi
-                Layout.fillWidth: true; Layout.minimumWidth: root.dualRadio ? 280 : 0; Layout.preferredWidth: root.dualRadio ? 300 : 0; Layout.preferredHeight: wifiSection.implicitHeight; Layout.alignment: Qt.AlignTop
+                Layout.fillWidth: true; Layout.minimumWidth: 0; Layout.preferredWidth: root.dualRadio ? 300 : 0; Layout.preferredHeight: wifiSection.implicitHeight; Layout.alignment: Qt.AlignTop
                 ColumnLayout { id: wifiSection; anchors.left: parent.left; anchors.right: parent.right; spacing: 7
                     RowLayout { Layout.fillWidth: true
-                        Text { text: "Wi-Fi"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
+                        ActionButton { text: "Wi-Fi " + (root.wifiExpanded ? "−" : "+"); onClicked: root.wifiExpanded = !root.wifiExpanded }
                         Item { Layout.fillWidth: true }
                         Rectangle { visible: root.wifiDevice && Networking.wifiEnabled; width: 42; height: 22; radius: 11; color: Theme.elevated
                             Text { anchors.centerIn: parent; text: root.wifiDevice && root.wifiDevice.scannerEnabled ? "Stop" : "Scan"; color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: 10 }
-                            MouseArea { anchors.fill: parent; onClicked: { if (root.wifiDevice) root.wifiDevice.scannerEnabled = !root.wifiDevice.scannerEnabled } }
+                            MouseArea { anchors.fill: parent; onClicked: { if (root.wifiDevice) { if (!root.wifiExpanded) { root.wifiExpanded = true; root.wifiDevice.scannerEnabled = true } else root.wifiDevice.scannerEnabled = !root.wifiDevice.scannerEnabled } } }
                         }
                         Rectangle { width: 42; height: 22; radius: height / 2; color: Networking.wifiEnabled ? Theme.accent : Theme.elevated
                             Rectangle { width: 16; height: 16; radius: width / 2; anchors.verticalCenter: parent.verticalCenter; x: Networking.wifiEnabled ? parent.width - width - 3 : 3; color: Networking.wifiEnabled ? Theme.accentText : Theme.muted
-                                Behavior on x { NumberAnimation { duration: Theme.animationFast } }
+                                Behavior on x { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationFast)} }
                             }
                             MouseArea { anchors.fill: parent; onClicked: Networking.wifiEnabled = !Networking.wifiEnabled }
                         }
                     }
-                    ListView { Layout.fillWidth: true; Layout.preferredHeight: Math.min(contentHeight, 182); clip: true; model: root.wifiDevice ? root.wifiDevice.networks : null
+                    Text { visible: !root.wifiExpanded || !Networking.wifiEnabled || !root.wifiDevice || root.wifiDevice.networks.values.length === 0; text: !Networking.wifiEnabled ? "Wi-Fi is off" : !root.wifiExpanded ? "Expand to choose a network" : "No networks found"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 11 }
+                    ListView { visible: root.wifiExpanded; Layout.fillWidth: true; Layout.preferredHeight: Math.min(contentHeight, 182); clip: true; model: root.wifiDevice ? root.wifiDevice.networks : null
                         delegate: Rectangle { required property var modelData; width: ListView.view.width; height: 38; radius: Theme.radius; color: networkMouse.containsMouse ? Theme.surfaceHover : "transparent"
                             RowLayout { anchors.fill: parent; anchors.margins: 8; Text { text: modelData.name; color: modelData.connected ? Theme.accent : Theme.text; font.family: Theme.fontFamily; elide: Text.ElideRight; Layout.fillWidth: true } Text { text: modelData.connected ? "connected" : Math.round(modelData.signalStrength * 100) + "%"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 11 } }
-                            MouseArea { id: networkMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.connectWifi(modelData) }
+                            MouseArea { id: networkMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.connectWifi(modelData, wifiPasswordConfirm, wifiPasswordInput) }
                         }
                     }
                 }
             }
-            Rectangle { visible: Capabilities.hasWifi && Capabilities.hasBluetooth; Layout.fillHeight: true; width: 1; color: Theme.surfaceHover }
             Item { visible: Capabilities.hasBluetooth
-                Layout.fillWidth: true; Layout.minimumWidth: root.dualRadio ? 280 : 0; Layout.preferredWidth: root.dualRadio ? 300 : 0; Layout.preferredHeight: bluetoothSection.implicitHeight; Layout.alignment: Qt.AlignTop
+                Layout.fillWidth: true; Layout.minimumWidth: 0; Layout.preferredWidth: root.dualRadio ? 300 : 0; Layout.preferredHeight: bluetoothSection.implicitHeight; Layout.alignment: Qt.AlignTop
                 ColumnLayout { id: bluetoothSection; anchors.left: parent.left; anchors.right: parent.right; spacing: 7
                     RowLayout { Layout.fillWidth: true
-                        Text { text: "Bluetooth"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
+                        ActionButton { text: "Bluetooth " + (root.bluetoothExpanded ? "−" : "+"); onClicked: root.bluetoothExpanded = !root.bluetoothExpanded }
                         Item { Layout.fillWidth: true }
                         Text { visible: !BluetoothState.available; text: "Inactive"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 }
                         Rectangle { visible: BluetoothState.enabled; width: 42; height: 22; radius: 11; color: Theme.elevated
                             Text { anchors.centerIn: parent; text: BluetoothState.scanning ? "Stop" : "Scan"; color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: 10 }
-                            MouseArea { anchors.fill: parent; onClicked: BluetoothState.scan() }
+                            MouseArea { anchors.fill: parent; onClicked: { root.bluetoothExpanded = true; BluetoothState.scan() } }
                         }
                         Rectangle { width: 42; height: 22; radius: height / 2; color: BluetoothState.enabled ? Theme.accent : Theme.elevated
                             Rectangle { width: 16; height: 16; radius: width / 2; anchors.verticalCenter: parent.verticalCenter; x: BluetoothState.enabled ? parent.width - width - 3 : 3; color: BluetoothState.enabled ? Theme.accentText : Theme.muted
-                                Behavior on x { NumberAnimation { duration: Theme.animationFast } }
+                                Behavior on x { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationFast)} }
                             }
                             MouseArea { anchors.fill: parent; onClicked: { if (BluetoothState.available) BluetoothState.run("power", BluetoothState.enabled ? "off" : "on"); else BluetoothState.activateService() } }
                         }
                     }
-                    Flickable { id: bluetoothList; Layout.fillWidth: true; Layout.preferredHeight: Math.min(bluetoothDeviceColumn.height, 182); clip: true; contentWidth: width; contentHeight: bluetoothDeviceColumn.height
+                    Text { visible: !root.bluetoothExpanded || !BluetoothState.enabled || BluetoothState.devices.length === 0; text: !BluetoothState.enabled ? "Bluetooth is off" : !root.bluetoothExpanded ? BluetoothState.devices.filter(device => device.connected).length + " connected · expand to manage" : "Scan to find nearby devices"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 11 }
+                    Flickable { id: bluetoothList; visible: root.bluetoothExpanded; Layout.fillWidth: true; Layout.preferredHeight: Math.min(bluetoothDeviceColumn.height, 182); clip: true; contentWidth: width; contentHeight: bluetoothDeviceColumn.height
                         Column { id: bluetoothDeviceColumn; width: bluetoothList.width
                             Repeater { model: BluetoothState.devices
-                                delegate: Rectangle { required property var modelData; property bool optionsOpen: false; width: bluetoothList.width; height: optionsOpen && modelData.paired ? 70 : 38; radius: Theme.radius; color: deviceMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                                delegate: Rectangle { required property var modelData; property bool optionsOpen: false; property var sink: root.audioSink(modelData.address); width: bluetoothList.width; height: optionsOpen && modelData.paired ? 108 : 38; radius: Theme.radius; color: deviceMouse.containsMouse ? Theme.surfaceHover : "transparent"
                                     RowLayout { z: 1; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: 8; height: 22; spacing: 7
-                                        Text { text: modelData.name || modelData.deviceName || modelData.address; color: modelData.connected ? Theme.accent : Theme.text; font.family: Theme.fontFamily; elide: Text.ElideRight; Layout.fillWidth: true }
+                                        Text { text: (modelData.icon && modelData.icon.includes("audio") ? "󰋋 " : "󰂯 ") + (modelData.name || modelData.deviceName || modelData.address); color: modelData.connected ? Theme.accent : Theme.text; font.family: Theme.fontFamily; elide: Text.ElideRight; Layout.fillWidth: true }
                                         Text { visible: !modelData.paired; text: modelData.pairing ? "pairing" : "new"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 }
-                                        Text { visible: !modelData.paired && modelData.batteryAvailable; text: Math.round(modelData.battery <= 1 ? modelData.battery * 100 : modelData.battery) + "%"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 }
+                                        Text { visible: modelData.batteryAvailable; text: Math.round(modelData.battery <= 1 ? modelData.battery * 100 : modelData.battery) + "%"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10 }
                                         Rectangle { visible: !modelData.paired && !modelData.pairing; width: 48; height: 25; radius: height / 2; color: Theme.accent
                                             Text { anchors.centerIn: parent; text: "Pair"; color: Theme.accentText; font.family: Theme.fontFamily; font.pixelSize: 10; font.bold: true }
                                             MouseArea { anchors.fill: parent; onClicked: { BluetoothState.selectedDevice = modelData; pairConfirm.visible = true } }
@@ -163,6 +201,13 @@ Item {
                                             MouseArea { anchors.fill: parent; onClicked: { BluetoothState.run("remove", modelData.address); BluetoothState.selectedDevice = null } }
                                         }
                                     }
+                                    ActionButton {
+                                        visible: parent.optionsOpen && parent.sink !== null
+                                        anchors.left: parent.left; anchors.top: parent.top; anchors.leftMargin: 8; anchors.topMargin: 40
+                                        text: parent.sink === Pipewire.defaultAudioSink ? "Active audio output" : "Use for audio"
+                                        highlighted: parent.sink === Pipewire.defaultAudioSink
+                                        onClicked: { Pipewire.preferredDefaultAudioSink = parent.sink; SettingsState.audioDeviceRefresh += 1 }
+                                    }
                                     MouseArea { id: deviceMouse; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; height: 38; hoverEnabled: true; onClicked: BluetoothState.selectedDevice = modelData }
                                 }
                             }
@@ -172,14 +217,16 @@ Item {
                 }
             }
         }
-        Rectangle { id: pairConfirm; visible: false; z: 10; anchors.fill: parent; radius: Theme.radius; color: Theme.background; border.color: Theme.accent; border.width: 1
+        }
+        }
+        Rectangle { id: pairConfirm; visible: false; z: 10; anchors.fill: parent; radius: Theme.radius; color: Theme.popupBackground; border.color: Theme.accent; border.width: 1
             ColumnLayout { anchors.centerIn: parent; width: parent.width - 34; spacing: 10
                 Text { text: "Pair Bluetooth device?"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
-                Text { text: "Confirm the PIN shown by the device or system pairing agent. Pairing is never silently authorized."; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10; wrapMode: Text.Wrap; Layout.fillWidth: true }
+                Text { text: "Check the code on your device, then confirm to pair."; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 10; wrapMode: Text.Wrap; Layout.fillWidth: true }
                 RowLayout { Text { text: "Cancel"; color: Theme.muted; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: pairConfirm.visible = false } } Item { Layout.fillWidth: true } Text { text: "Pair"; color: Theme.accent; font.family: Theme.fontFamily; MouseArea { anchors.fill: parent; onClicked: { BluetoothState.run("pair", BluetoothState.selectedDevice.address); pairConfirm.visible = false } } } }
             }
         }
-        Rectangle { id: bluetoothPairPrompt; visible: BluetoothState.pairingPrompt.length > 0; z: 11; anchors.fill: parent; radius: Theme.radius; color: Theme.background; border.color: Theme.accent; border.width: 1
+        Rectangle { id: bluetoothPairPrompt; visible: BluetoothState.pairingPrompt.length > 0; z: 11; anchors.fill: parent; radius: Theme.radius; color: Theme.popupBackground; border.color: Theme.accent; border.width: 1
             ColumnLayout { anchors.centerIn: parent; width: parent.width - 34; spacing: 10
                 Text { text: "Bluetooth pairing"; color: Theme.text; font.family: Theme.fontFamily; font.bold: true }
                 Text { text: BluetoothState.pairingPrompt; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: 11; wrapMode: Text.Wrap; Layout.fillWidth: true }
@@ -195,7 +242,7 @@ Item {
             }
             onVisibleChanged: if (visible && BluetoothState.pairingPromptType === "pin") bluetoothPinInput.forceActiveFocus()
         }
-        Rectangle { id: wifiPasswordConfirm; property var network: null; visible: false; z: 10; anchors.fill: parent; radius: Theme.radius; color: Theme.background; border.color: Theme.accent; border.width: 1
+        Rectangle { id: wifiPasswordConfirm; property var network: null; visible: false; z: 10; anchors.fill: parent; radius: Theme.radius; color: Theme.popupBackground; border.color: Theme.accent; border.width: 1
             function cancel() { wifiPasswordInput.text = ""; network = null; visible = false }
             function connect() {
                 if (!network || !wifiPasswordInput.text.length) return

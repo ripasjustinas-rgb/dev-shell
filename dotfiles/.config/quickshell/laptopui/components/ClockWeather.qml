@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 import qs.theme
+import qs.services
 
 Item {
     id: root
@@ -48,7 +49,7 @@ Item {
             font.pixelSize: Theme.panelContentHeight - 6
             renderType: Text.NativeRendering
 
-            Behavior on color { ColorAnimation { duration: 180 } }
+            Behavior on color { ColorAnimation { duration: SettingsState.reducedMotion ? 0 : (180)} }
         }
 
         Column {

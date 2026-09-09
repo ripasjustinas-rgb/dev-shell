@@ -6,6 +6,19 @@ import qs.services
 Item {
     id: root
     property bool controlOpen: false
+    onControlOpenChanged: SettingsState.controlOpen = controlOpen
+    Connections {
+        target: SettingsState
+        function onOverlayOpened(name) { root.closeOverlays() }
+    }
+    function toggle(name) {
+        const opening = !root[name]
+        closeOverlays()
+        SettingsState.connectivityOpen = false
+        SettingsState.mediaScreen = ""
+        if (opening) SettingsState.overlayOpened(name)
+        root[name] = opening
+    }
     property bool launcherOpen: false
     property bool notificationsOpen: false
     property bool powerOpen: false
@@ -23,24 +36,21 @@ Item {
 
     IpcHandler {
         target: "laptopui"
-        function toggleControlCenter() { root.controlOpen = !root.controlOpen; root.launcherOpen = false; root.notificationsOpen = false }
-        function toggleLauncher() {
-            const opening = !root.launcherOpen
-            root.launcherOpen = opening
-            root.controlOpen = false
-            root.notificationsOpen = false
-            if (opening) launcher.reset()
-        }
-        function toggleNotifications() { root.notificationsOpen = !root.notificationsOpen; root.controlOpen = false; root.launcherOpen = false }
-        function togglePower() { root.powerOpen = !root.powerOpen; root.controlOpen = false; root.launcherOpen = false; root.notificationsOpen = false }
-        function toggleOverview() { root.overviewOpen = !root.overviewOpen; root.controlOpen = false; root.launcherOpen = false; root.notificationsOpen = false }
-        function toggleCommandPalette() { root.commandPaletteOpen = !root.commandPaletteOpen; root.controlOpen = false; root.launcherOpen = false; root.notificationsOpen = false }
+        function toggleControlCenter() { root.toggle("controlOpen") }
+        function toggleLauncher() { root.toggle("launcherOpen"); if (root.launcherOpen) launcher.reset() }
+        function toggleNotifications() { root.toggle("notificationsOpen") }
+        function togglePower() { root.toggle("powerOpen") }
+        function toggleOverview() { root.toggle("overviewOpen") }
+        function toggleCommandPalette() { root.toggle("commandPaletteOpen") }
         function toggleConnectivity() { SettingsState.connectivityOpen = !SettingsState.connectivityOpen; root.closeOverlays() }
+        function uiState(): string { return JSON.stringify({screen: SettingsState.focusedScreen, media: SettingsState.mediaScreen, control: root.controlOpen, connectivity: SettingsState.connectivityOpen}) }
+        function toggleMedia() { SettingsState.mediaScreen = SettingsState.mediaScreen.length ? "" : SettingsState.focusedScreen }
         function osd(kind: string) { osd.show(kind) }
         function refreshUpdates() { UpdateState.refresh() }
-        function closeOverlays() { root.closeOverlays() }
+        function closeOverlays() { root.closeOverlays(); SettingsState.connectivityOpen = false; SettingsState.mediaScreen = "" }
     }
 
+    ConnectivityMenu { requestedOpen: SettingsState.connectivityOpen }
     ControlCenter { open: root.controlOpen; onCloseRequested: root.controlOpen = false }
     AppLauncher { id: launcher; open: root.launcherOpen; onCloseRequested: root.launcherOpen = false }
     NotificationCenter { open: root.notificationsOpen; onCloseRequested: root.notificationsOpen = false }

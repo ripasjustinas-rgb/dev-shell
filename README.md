@@ -2,6 +2,9 @@
 
 Arch Linux Hyprland ir Quickshell konfigūracija laptopui bei desktopui.
 
+Išplečiamas centrinis media player su seek juosta, kompaktiškas connectivity
+popup ir atnaujintas `SUPER+A` aprašyti [docs/SHELL_CONTROLS.md](docs/SHELL_CONTROLS.md).
+
 Desktop portavimo pradžia:
 
 ```sh

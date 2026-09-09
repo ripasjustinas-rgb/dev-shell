@@ -3,6 +3,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 Rectangle {
     id: root
@@ -14,8 +15,8 @@ Rectangle {
     Layout.preferredHeight: 92
     radius: 14
     color: mouse.containsMouse ? Theme.elevated : Theme.surface
-    Behavior on color { ColorAnimation { duration: 140 } }
-    Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+    Behavior on color { ColorAnimation { duration: SettingsState.reducedMotion ? 0 : (140)} }
+    Behavior on scale { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (140); easing.type: Easing.OutCubic } }
     scale: mouse.containsMouse ? 1.025 : 1
     function iconSource() {
         return Quickshell.iconPath(root.entry.icon || "application-x-executable", "application-x-executable")

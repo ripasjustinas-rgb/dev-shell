@@ -43,7 +43,6 @@ Item {
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
             focusable: true
-            Keys.onEscapePressed: root.closeRequested()
             Shortcut { enabled: root.open; sequence: "Escape"; onActivated: root.closeRequested() }
 
             anchors {
@@ -67,7 +66,7 @@ Item {
                 width: 390
                 height: Math.min(520, parent.height - Theme.panelHeight - 28)
                 radius: Theme.radiusLarge
-                color: Theme.background
+                color: Theme.popupBackground
                 border.color: Theme.border
                 border.width: 1
                 opacity: root.open ? 1 : 0
@@ -88,7 +87,7 @@ Item {
                     radius: height / 2
                     color: Theme.accent
                     opacity: 0.88
-                    Behavior on width { NumberAnimation { duration: Theme.animationNormal + 120; easing.type: Easing.OutCubic } }
+                    Behavior on width { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 120); easing.type: Easing.OutCubic } }
                 }
 
                 MouseArea {
@@ -359,7 +358,7 @@ Item {
 
                             Behavior on color {
                                 ColorAnimation {
-                                    duration: Theme.animationFast
+                                    duration: SettingsState.reducedMotion ? 0 : (Theme.animationFast)
                                 }
 
                             }
@@ -372,14 +371,14 @@ Item {
 
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: Theme.animationFast
+                        duration: SettingsState.reducedMotion ? 0 : (Theme.animationFast)
                     }
 
                 }
 
                 Behavior on y {
                     NumberAnimation {
-                        duration: Theme.animationNormal + 80
+                        duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 80)
                         easing.type: Easing.OutBack
                     }
 
@@ -387,7 +386,7 @@ Item {
 
                 Behavior on scale {
                     NumberAnimation {
-                        duration: Theme.animationNormal + 70
+                        duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 70)
                         easing.type: Easing.OutBack
                     }
 
@@ -395,7 +394,7 @@ Item {
 
                 Behavior on rotation {
                     NumberAnimation {
-                        duration: Theme.animationNormal + 100
+                        duration: SettingsState.reducedMotion ? 0 : (Theme.animationNormal + 100)
                         easing.type: Easing.OutBack
                     }
 

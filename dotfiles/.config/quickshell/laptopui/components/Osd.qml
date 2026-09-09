@@ -3,6 +3,7 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import qs.theme
+import qs.services
 
 Item {
     id: root
@@ -62,13 +63,13 @@ Item {
                 width: 220
                 height: 58
                 radius: 16
-                color: Theme.background
+                color: Theme.popupBackground
                 border.color: Theme.border
                 border.width: 1
                 opacity: root.shown ? 1 : 0
                 scale: root.shown ? 1 : 0.92
-                Behavior on opacity { NumberAnimation { duration: 160 } }
-                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+                Behavior on opacity { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (160)} }
+                Behavior on scale { NumberAnimation { duration: SettingsState.reducedMotion ? 0 : (180); easing.type: Easing.OutBack } }
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: 14

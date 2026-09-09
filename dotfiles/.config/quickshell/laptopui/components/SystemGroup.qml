@@ -39,7 +39,7 @@ RowLayout {
         const network = wifiNetwork()
         if (Capabilities.hasWifi) details.push(!Networking.wifiEnabled ? "Wi-Fi off" : (network ? "Wi-Fi: " + network.name : "Wi-Fi on, disconnected"))
         if (Capabilities.hasBluetooth) details.push(!BluetoothState.available || !BluetoothState.enabled ? "Bluetooth off" : (connectedBluetoothCount() ? "Bluetooth: " + connectedBluetoothCount() + " connected" : "Bluetooth on, disconnected"))
-        return details.join(" · ")
+        return details.length ? details.join(" · ") : "Network connections and traffic"
     }
 
     SystemStats {}
@@ -56,18 +56,12 @@ RowLayout {
 
     PanelButton {
         id: connectivityButton
-        visible: Capabilities.hasWifi || Capabilities.hasBluetooth
+        visible: true
         label: connectivityIcon()
         tooltip: connectivityTooltip()
         onClicked: SettingsState.connectivityOpen = !SettingsState.connectivityOpen
     }
 
-    ConnectivityMenu {
-        id: connectivityMenu
-        anchorItem: root.connectivityAnchorItem || connectivityButton
-        anchoredToPanelEdge: root.connectivityAnchorItem !== null
-        requestedOpen: SettingsState.connectivityOpen
-    }
 
     PanelButton {
         label: NotificationState.unreadCount > 0 ? "󰂚 " + NotificationState.unreadCount : "󰂚"

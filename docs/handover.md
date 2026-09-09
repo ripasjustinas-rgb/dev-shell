@@ -4,6 +4,12 @@
 į desktop PC. Tikslinis hostas: Intel Core i7-8700, NVIDIA GeForce RTX 2080 Ti
 ir Xiaomi 2560×1440@180 Hz monitorius per `DP-3`.
 
+Media/seek, tinklo telemetrijos, kompaktiškų išplečiamų kortelių ir clipboard
+3 → 50 įrašų elgesys: [SHELL_CONTROLS.md](SHELL_CONTROLS.md). Naujas
+`laptopui-network-info` helperis įtrauktas į diegiklį; reikalingi `python`,
+`iproute2`, `iputils`, `nmcli` ir `curl`. `speedtest-cli`, `iw` ir hyprsunset
+yra neprivalomi, jų nebuvimas turi matomą fallback.
+
 Dabartinė versija apima:
 
 - Hyprland ir Quickshell `laptopui` su high-rice stiklo/glow estetika;

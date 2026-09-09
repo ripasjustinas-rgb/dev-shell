@@ -6,6 +6,7 @@ QtObject {
     // Permanent "high rice" palette, adapted from NerdMini_shell. Qt colors
     // use #AARRGGBB, so alpha is kept at the beginning of translucent tokens.
     property color background: "#d6151218"
+    readonly property color popupBackground: Qt.rgba(background.r, background.g, background.b, 0.97)
     property color surface: "#d9221e24"
     property color elevated: "#ed2c292e"
     property color surfaceHover: "#e64a454e"

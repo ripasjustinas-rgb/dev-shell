@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+# Read-only metadata and explicitly requested, bounded network probes.
+set -euo pipefail
+exec python3 - "$@" <<'PY'
+import concurrent.futures
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+
+
+def run(args, timeout=4):
+    try:
+        result = subprocess.run(args, capture_output=True, text=True, timeout=timeout,
+                                env={**os.environ, "LC_ALL": "C"})
+        return result.stdout.strip() if result.returncode == 0 else ""
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def fields(line):
+    result, value, escaped = [], "", False
+    for char in line:
+        if escaped:
+            value += char
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == ":":
+            result.append(value)
+            value = ""
+        else:
+            value += char
+    result.append(value + ("\\" if escaped else ""))
+    return result
+
+
+def snapshot():
+    routes = run(["ip", "-j", "route", "get", "1.1.1.1"])
+    route = (json.loads(routes or "[]") or [{}])[0]
+    if not route.get("dev"):
+        routes = run(["ip", "-j", "-6", "route", "get", "2606:4700:4700::1111"])
+        route = (json.loads(routes or "[]") or [{}])[0]
+    interface = route.get("dev", "")
+    info = {"interface": interface, "address": route.get("prefsrc", route.get("src", "")),
+            "gateway": route.get("gateway", ""), "connection": "No default route",
+            "speedtestAvailable": bool(shutil.which("speedtest-cli")), "vpn": [], "wifi": {}}
+    if not interface:
+        return info
+    data = {}
+    for line in run(["nmcli", "-t", "-f", "GENERAL,IP4,IP6", "device", "show", interface]).splitlines():
+        key, _, value = line.partition(":")
+        data[key] = re.sub(r"\\(.)", r"\1", value)
+    info.update(connection=data.get("GENERAL.CONNECTION", interface),
+                kind=data.get("GENERAL.TYPE", "Network"),
+                connectivity=data.get("GENERAL.IP4-CONNECTIVITY", "") + " / " + data.get("GENERAL.IP6-CONNECTIVITY", ""),
+                dns=", ".join(v for k, v in data.items() if ".DNS[" in k),
+                gateway=info["gateway"] or data.get("IP4.GATEWAY", ""))
+    for line in run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show", "--active"]).splitlines():
+        parts = fields(line)
+        if len(parts) == 2 and parts[1] in ("vpn", "wireguard", "tun"):
+            info["vpn"].append(parts[0])
+    for line in run(["nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL,FREQ,CHAN,RATE,SECURITY", "device", "wifi", "list", "--rescan", "no"]).splitlines():
+        parts = fields(line)
+        if len(parts) == 7 and parts[0] == "yes":
+            info["wifi"] = dict(zip(("active", "ssid", "signal", "frequency", "channel", "apRate", "security"), parts))
+            break
+    try:
+        speed = int(Path("/sys/class/net", interface, "speed").read_text())
+        if speed > 0:
+            info["linkSpeed"] = str(speed) + " Mb/s"
+    except (OSError, ValueError):
+        pass
+    # iw reports the negotiated Wi-Fi rate; nmcli's RATE is the AP maximum.
+    if data.get("GENERAL.TYPE") == "wifi" and shutil.which("iw"):
+        link = run(["iw", "dev", interface, "link"])
+        match = re.search(r"tx bitrate:\s*(.+)", link)
+        if match:
+            info["linkSpeed"] = match[1]
+    return info
+
+
+def diagnose():
+    info = snapshot()
+    gateway = info.get("gateway", "")
+    def ping():
+        if not gateway:
+            return "Gateway: unavailable (direct or tunnel route)"
+        result = run(["ping", "-n", "-c", "3", "-W", "1", gateway], 5)
+        match = re.search(r"= ([\d.]+)/([\d.]+)/([\d.]+)/", result)
+        return "Gateway: " + (match[2] + " ms average" if match else "no ICMP reply")
+    def dns():
+        return "DNS: " + ("resolved example.com" if run(["getent", "ahosts", "example.com"]) else "resolution failed")
+    def internet():
+        result = run(["curl", "-I", "-sS", "--max-time", "6", "-o", "/dev/null", "-w", "%{http_code} %{time_total}", "https://example.com"], 7)
+        parts = result.split()
+        if len(parts) == 2 and parts[0].startswith(("2", "3")):
+            return "Internet: HTTPS reached example.com in " + str(round(float(parts[1]) * 1000)) + " ms"
+        return "Internet: HTTPS probe failed"
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+        results = list(pool.map(lambda fn: fn(), (ping, dns, internet)))
+    return {"result": "\n".join(results)}
+
+
+mode = sys.argv[1] if len(sys.argv) > 1 else "snapshot"
+try:
+    if mode == "snapshot":
+        result = snapshot()
+    elif mode == "diagnose":
+        result = diagnose()
+    elif mode == "speedtest":
+        raw = run(["speedtest-cli", "--json", "--secure"], 90)
+        test = json.loads(raw or "{}")
+        result = {"result": ("↓ %.1f Mb/s  ↑ %.1f Mb/s · %.0f ms" %
+                  (test["download"] / 1e6, test["upload"] / 1e6, test["ping"]))
+                  if "download" in test else "Speed test unavailable or failed"}
+    else:
+        raise ValueError("Unknown network action")
+    print(json.dumps(result))
+except (ValueError, KeyError, TypeError) as error:
+    print(json.dumps({"error": str(error)}))
+    sys.exit(1)
+PY
